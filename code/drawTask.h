@@ -4,12 +4,11 @@
 #include "includes.h"
 
 //Task
-void drawTask(Road* road);
+void drawTask(DataToDraw* dataToDraw);
 
 //local functions
-void initializeRoad(Road* road);
 void drawBorder(Road* road, uint16_t indexCurrentPoint, uint8_t changeCurrentPoint, Vehicle* ego);
 int calculateReference(Road* road, int index, int v_y);
-void drawMap(Road* road, uint16_t currIdx);
+void drawMap(Road* road, Vehicle* ego, Map* map);
 
 #endif
