@@ -47,8 +47,8 @@ typedef struct
 }RoadPoint;
 typedef struct
 {
+	double side;
 	RoadPoint point[ROAD_POINTS+4]; // 4 additional points to make sure of a right finish
-	float side;
 	StateRoad state;
 } Road;
 
@@ -71,10 +71,13 @@ typedef struct
  */
 
 #define MAX_JOYSTICK_X 			(255/2)
-#define MAX_JOYSTICK_Y 			255
+#define MAX_JOYSTICK_Y 			(255)
 #define V_X_MAX 				20
-#define V_Y_MAX 				10
+#define V_Y_MAX 				20
 #define MAX_JOYSTICK_ANGLE_X 	22
+
+#define VEHICLE_SIZE_X          10
+#define VEHICLE_SIZE_Y          20
 
 typedef enum {NO_COLLISION, COLLISION_WITH_BORDER} StateVehicle;
 

@@ -54,11 +54,11 @@ void initializeVehicle(Vehicle* vehicle)
 
 void initializeRoad(Road* road, Vehicle* ego)
 {
-	road->side = (float) SIDE;
+	road->side = (double) SIDE;
 	road->state = STRAIGHT_ROAD;
 	for (int i = 0; i < LAP_POINTS; i++) {
 		road->point[i].rel.x = displaySizeX / 2;
-		road->point[i].rel.yaw = 45;
+		road->point[i].rel.yaw = -45;
 		road->point[i].distanceToNextRoadPoint = 8 * UNIT_ROAD_DISTANCE;
 	}
 	//Copy Road for second lap
