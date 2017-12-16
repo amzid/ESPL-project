@@ -20,6 +20,7 @@ void drawTask(DataToDraw* dataToDraw)
 	xLastWakeTime = xTaskGetTickCount();
 	const TickType_t tickFramerate = 20;
 
+
 	while (TRUE) {
 
 		//clear display
