@@ -6,6 +6,7 @@
  *
  */
 
+#include <includes.h>
 #include "includes.h"
 
 #include "drawTask.h"
@@ -25,14 +26,24 @@ int main()
 
 	//Create and initialize road and vehicles
 	Vehicle ego;
+	Vehicle bot[NUM_BOTS];
 	initializeVehicle(&ego);
+    for(int i=0; i<NUM_BOTS; i++)
+	    initializeVehicle(&bot[i]);
 	Road road;
 	initializeRoad(&road,&ego);
 	Map map;
 	fillMap(&road,&map);
 
-	DataToDraw dataToDraw = {&road, &ego, &map};
-
+#if (NUM_BOTS == 1)
+	DataToDraw dataToDraw = {&road, &ego, &bot[0], &map};
+#endif
+#if (NUM_BOTS == 2)
+    DataToDraw dataToDraw = {&road, &ego, &bot[0], &bot[1], &map};
+#endif
+#if (NUM_BOTS == 3)
+    DataToDraw dataToDraw = {&road, &ego, &bot[0], &bot[1], &bot[2], &map};
+#endif
 	// Initializes Tasks with their respective priority
 	xTaskCreate(drawTask, "drawTask", STACK_SIZE, &dataToDraw, 4, NULL);
 
@@ -45,11 +56,17 @@ void initializeVehicle(Vehicle* vehicle)
 {
 	vehicle->rel.y = displaySizeY / 2;
 	vehicle->rel.x = displaySizeX / 2;
+	vehicle->a_x = 0;
+	vehicle->a_y = 0;
 	vehicle->v_x = 0;
 	vehicle->v_y = 0;
 	vehicle->currentRoadPoint = 0;
 	vehicle->distanceFromCurrentRoadPoint = 0;
 	vehicle->state = NO_COLLISION;
+    // Bot specifications
+    vehicle->a_y_0 = -1;
+    vehicle->v_y_max_straight_road = -1;
+    vehicle->absEffect = -1;
 }
 
 void initializeRoad(Road* road, Vehicle* ego)
@@ -58,7 +75,7 @@ void initializeRoad(Road* road, Vehicle* ego)
 	road->state = STRAIGHT_ROAD;
 	for (int i = 0; i < LAP_POINTS; i++) {
 		road->point[i].rel.x = displaySizeX / 2;
-		road->point[i].rel.yaw = -45;
+		road->point[i].rel.yaw = 45;
 		road->point[i].distanceToNextRoadPoint = 8 * UNIT_ROAD_DISTANCE;
 	}
 	//Copy Road for second lap

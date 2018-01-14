@@ -5,6 +5,7 @@ message("Using esptoolchain.cmake")
 
 get_filename_component(CURRENT_PATH ${CMAKE_CURRENT_LIST_FILE} DIRECTORY)
 
+
 # setup include directories
 include_directories(
     ${CURRENT_PATH}/STM32F4/Libraries/STM32F4xx_StdPeriph_Driver/inc
@@ -89,6 +90,8 @@ file(GLOB UGFX_SRCS
     ${CURRENT_PATH}/ugfx/src/gwin/gwin_wm.c
 )
 
+set (CURRENT_PATH /home/ahmed/Development/espl-workspace/espl-toolchain/bin/gcc-arm/gcc/)
+
 #can use find_program multiple times on same target. First hit will be used. Allows randomly searching at (our) default locations.
 find_program(ARM_GCC arm-none-eabi-gcc ${CURRENT_PATH}/../../../bin/gcc-arm/gcc/bin NO_DEFAULT_PATH)
 find_program(ARM_GCC arm-none-eabi-gcc /DIST/it/sw/amd64/gcc-arm/gcc/bin/ NO_DEFAULT_PATH)
@@ -153,6 +156,8 @@ set(CMAKE_CXX_COMPILER ${ARM_GCXX})
 set(CMAKE_AR ${ARM_AR})
 set(CMAKE_RANLIB ${ARM_RANLIB})
 set(CMAKE_LINKER ${ARM_LINKER})
+
+get_filename_component(CURRENT_PATH ${CMAKE_CURRENT_LIST_FILE} DIRECTORY)
 
 set(CMAKE_C_LINK_EXECUTABLE
     "${CMAKE_LINKER} -o <TARGET> <OBJECTS> --start-group -lc -lnosys --end-group -L ${CURRENT_PATH}/softfp/arm-none-eabi_softfp -L ${CURRENT_PATH}/softfp/lib_softfp -T ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/usr/stm32f429zi_flash.ld"

@@ -12,7 +12,7 @@ static const uint16_t displaySizeX = 320,
 /*
  * FreeRTOS definitions
  */
-#define STACK_SIZE 1000
+#define STACK_SIZE 2000
 
 /*
  * Road definitions
@@ -30,6 +30,11 @@ static const uint16_t displaySizeX = 320,
 #define CORNER_H_L 				1
 #define CORNER_H_R 				2
 #define CORNER_D_R 				3
+
+typedef struct {
+    double yaw_rad[2];
+    int sizeHigherBorder;
+} Border;
 
 typedef enum {STRAIGHT_ROAD, START_CURVE , MIDDLE_CURVE , END_CURVE} StateRoad;
 typedef enum {LOWER_BORDER,HIGHER_BORDER} TYPE_BORDER;
@@ -69,26 +74,39 @@ typedef struct
 /*
  * Vehicle definitions
  */
+#define NUM_BOTS                3
+#define NUM_VEHICLES            4
 
 #define MAX_JOYSTICK_X 			(255/2)
 #define MAX_JOYSTICK_Y 			(255)
+#define V_Y_MAX                 30
 #define V_X_MAX 				20
-#define V_Y_MAX 				20
+#define A_Y_MAX 				7
 #define MAX_JOYSTICK_ANGLE_X 	22
 
 #define VEHICLE_SIZE_X          10
 #define VEHICLE_SIZE_Y          20
 
 typedef enum {NO_COLLISION, COLLISION_WITH_BORDER} StateVehicle;
+typedef enum {RED, GREEN, YELLOW, BLUE} Color;
 
 typedef struct
 {
+	// Bot specific definitions
+	double a_y_0;
+    double v_y_max_straight_road;
+    double absEffect;
+    Color color;
+	// General definitions
 	coord rel;
-	int v_x;
-	int v_y;
+	double v_x;
+	double v_y;
+	double a_x;
+	double a_y;
 	uint16_t currentRoadPoint;
 	uint16_t distanceFromCurrentRoadPoint; //Distance to the current road point
 	StateVehicle state;
+    uint8_t ranking;
 } Vehicle;
 
 /*
@@ -98,6 +116,13 @@ typedef struct
 {
 	Road* road;
 	Vehicle* ego;
+    Vehicle* bot1;
+#if (NUM_BOTS>1)
+    Vehicle* bot2;
+#endif
+#if (NUM_BOTS>2)
+    Vehicle* bot3;
+#endif
 	Map* map;
 } DataToDraw;
 
