@@ -24,3 +24,5 @@
 /* convenience functions and init includes */
 
 #include "ESPL_functions.h"
+#include "math.h"
+#include "definitions.h"
