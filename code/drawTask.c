@@ -1,3 +1,4 @@
+#include <includes.h>
 #include "drawTask.h"
 
 /*
@@ -11,15 +12,19 @@ void drawTask(DataToDraw* dataToDraw)
 	font1 = gdispOpenFont("DejaVuSans24*");
 
 	Road* road = dataToDraw->road;
-	Vehicle* ego = dataToDraw->ego;
+    Vehicle* ego = dataToDraw->ego;
+    Vehicle* bot = dataToDraw->bot;
 	Map* map  = dataToDraw->map;
+    Border border;
+    border.sizeHigherBorder = 0;
+    border.yaw_rad[LOWER_BORDER] = 0;
+    border.yaw_rad[HIGHER_BORDER] = 0;
 
 	coord joystickPosition = { 0, 0, 0 };
 
 	TickType_t xLastWakeTime;
 	xLastWakeTime = xTaskGetTickCount();
 	const TickType_t tickFramerate = 20;
-
 
 	while (TRUE) {
 
@@ -42,30 +47,18 @@ void drawTask(DataToDraw* dataToDraw)
 		gdispDrawString(0, 0, str, font1, Black);
 		sprintf(str, "v_y: %d", ego->v_y);
 		gdispDrawString(0, 11, str, font1, Black);
-		sprintf(str, "side: %d", (int)round(road->side));
-		gdispDrawString(0, 22, str, font1, Black);
+        sprintf(str, "side: %d", (int)round(road->side));
+        gdispDrawString(0, 22, str, font1, Black);
 
 		// Update position according to y speed
-		road->point[ego->currentRoadPoint].rel.y += ego->v_y;
-		ego->distanceFromCurrentRoadPoint += ego->v_y;
+        uint8_t changeCurrentPoint = updatePosition(ego, road);
 
-		uint8_t currentRoadPointInDisplay = 0, changeCurrentPoint = 0;
+        // Bot
+        bot->v_y = ego->v_y;
+        updatePosition(bot, road);
+        drawBot(bot, ego, road, &border);
 
-		// update relative positions
-		while(!currentRoadPointInDisplay && ego->currentRoadPoint<ROAD_POINTS)
-		{
-			//update position of next current road point
-			road->point[ego->currentRoadPoint+1].rel.y = road->point[ego->currentRoadPoint].rel.y - road->point[ego->currentRoadPoint].distanceToNextRoadPoint;
-			currentRoadPointInDisplay = (road->point[ego->currentRoadPoint].rel.y >= displaySizeY / 2) && (road->point[ego->currentRoadPoint].rel.y < (displaySizeY / 2 + road->point[ego->currentRoadPoint].distanceToNextRoadPoint));
-			if (!currentRoadPointInDisplay)
-			{
-				changeCurrentPoint = 1;
-				ego->distanceFromCurrentRoadPoint -= road->point[ego->currentRoadPoint].distanceToNextRoadPoint;
-				ego->currentRoadPoint++;
-			}
-		}
-
-		drawBorder(road, ego->currentRoadPoint, changeCurrentPoint, ego);
+		drawBorder(road, ego->currentRoadPoint, changeCurrentPoint, ego, &border);
 
 		//TODO: Manage end of game
 		if (ego->currentRoadPoint == ROAD_POINTS - 1) {
@@ -78,7 +71,7 @@ void drawTask(DataToDraw* dataToDraw)
 		gdispFillArea(ego->rel.x, ego->rel.y, VEHICLE_SIZE_X, VEHICLE_SIZE_Y, Blue);
 
 		// use IdxCurrentPointInDisplay to draw the right position in road map
-		drawMap(road, ego, map);
+		drawMap(road, ego, bot, map);
 
 		// Wait for display to stop writing
 		xSemaphoreTake(ESPL_DisplayReady, portMAX_DELAY);
@@ -89,16 +82,48 @@ void drawTask(DataToDraw* dataToDraw)
 }
 
 /*
+ * @brief update vehicle position based on given speed
+ */
+uint8_t updatePosition(Vehicle* vehicle, Road* road) {
+    vehicle->distanceFromCurrentRoadPoint += vehicle->v_y;
+    uint8_t currentRoadPointInDisplay = 0, changeCurrentPoint = 0;
+    // update relative positions
+    while(!currentRoadPointInDisplay && vehicle->currentRoadPoint<ROAD_POINTS)
+    {
+        //update position of next current road point
+        currentRoadPointInDisplay = (vehicle->distanceFromCurrentRoadPoint>= 0) && (vehicle->distanceFromCurrentRoadPoint < road->point[vehicle->currentRoadPoint].distanceToNextRoadPoint);
+        if (!currentRoadPointInDisplay)
+        {
+            changeCurrentPoint = 1;
+            vehicle->distanceFromCurrentRoadPoint -= road->point[vehicle->currentRoadPoint].distanceToNextRoadPoint;
+            vehicle->currentRoadPoint++;
+        }
+    }
+    return changeCurrentPoint;
+}
+
+
+void drawBot(Vehicle* bot, Vehicle*  ego, Road* road, Border* border){
+    if(bot->currentRoadPoint == ego->currentRoadPoint)
+    {
+        int distanceBotToEgo = bot->distanceFromCurrentRoadPoint - ego->distanceFromCurrentRoadPoint;
+        bot->rel.y = displaySizeY/2 - distanceBotToEgo;
+        bot->rel.x = calcX(border, bot->rel.y, road->side) + 20;
+        gdispFillArea(bot->rel.x, bot->rel.y, VEHICLE_SIZE_X, VEHICLE_SIZE_Y, Green);
+    }
+}
+
+
+/*
  *
  *
  */
-void drawBorder(Road* road, uint16_t indexCurrentPoint, uint8_t changeCurrentPoint, Vehicle* ego)
+void drawBorder(Road* road, uint16_t indexCurrentPoint, uint8_t changeCurrentPoint, Vehicle* ego, Border* border)
 {
-	//States
-	static double yaw_rad[2] = { 0, 0 };
+	//States: border->yaw_rad[2]
 
-	//Output of state machine
-	int sizeHigherBorder;
+
+	//Output of state machine: border->sizeHigherBorder
 
 	// For interpolation
 	static double yaw_rad_screen = 0;
@@ -118,7 +143,7 @@ void drawBorder(Road* road, uint16_t indexCurrentPoint, uint8_t changeCurrentPoi
 	// control state changes
 	if (road->state == STRAIGHT_ROAD && distanceToNextRoadPoint <= UNIT_ROAD_DISTANCE)
 	{
-		yaw_rad[HIGHER_BORDER] += road->point[indexCurrentPoint + 1].rel.yaw * 3.14 / 180;
+        border->yaw_rad[HIGHER_BORDER] += road->point[indexCurrentPoint + 1].rel.yaw * 3.14 / 180;
 		road->state = START_CURVE;
 	}
 	else if (road->state == START_CURVE && changeCurrentPoint)
@@ -128,7 +153,7 @@ void drawBorder(Road* road, uint16_t indexCurrentPoint, uint8_t changeCurrentPoi
 	}
 	else if(road->state == END_CURVE && ego->distanceFromCurrentRoadPoint >= UNIT_ROAD_DISTANCE)
 	{
-		yaw_rad[HIGHER_BORDER] = 0;
+        border->yaw_rad[HIGHER_BORDER] = 0;
 		road->state = STRAIGHT_ROAD;
 	}
 
@@ -136,26 +161,26 @@ void drawBorder(Road* road, uint16_t indexCurrentPoint, uint8_t changeCurrentPoi
 	if (road->state == START_CURVE)
 	{
 		if (offsetY > displaySizeY / 2)
-			sizeHigherBorder = offsetY - displaySizeY / 2;
+            border->sizeHigherBorder = offsetY - displaySizeY / 2;
 		else
-			sizeHigherBorder = 0;
+            border->sizeHigherBorder = 0;
 	}
 	else if (road->state == MIDDLE_CURVE) //TODO: improve implementation and minimize conditional structures
 	{
 		// Here many cases are possible:
 		// 1 case: Angle successfully fixed through joystick (user applies enough x speed during enough time
 		// While curve can still be seen in lower part of screen -> state END_CURVE is necessary
-		if (ego->distanceFromCurrentRoadPoint <= UNIT_ROAD_DISTANCE/2 && fabs(yaw_rad[HIGHER_BORDER]) <= fabs(yaw_rad_joystick))
+		if (ego->distanceFromCurrentRoadPoint <= UNIT_ROAD_DISTANCE/2 && fabs(border->yaw_rad[HIGHER_BORDER]) <= fabs(yaw_rad_joystick))
 		{
-			sizeHigherBorder = (displaySizeY / 2) + offsetY; // offsetY < (displaySizeY / 2)
-			yaw_rad[HIGHER_BORDER] = 0; // ego vehicle is again parallel to road
+            border->sizeHigherBorder = (displaySizeY / 2) + offsetY; // offsetY < (displaySizeY / 2)
+            border->yaw_rad[HIGHER_BORDER] = 0; // ego vehicle is again parallel to road
 			ego->state = NO_COLLISION;
 			road->state = END_CURVE;
 		}
 		else // case 2: angle not fixed yet in the first UNIT_ROAD_DISTANCE/2 OR case 3: curve cannot be seen in lower part of screen (ego->distanceFromCurrentRoadPoint > UNIT_ROAD_DISTANCE/2)
 		{
 			// Applicable for case 3 -> No need for END_CURVE; road is already straight
-			if(fabs(yaw_rad[HIGHER_BORDER]) <= fabs(yaw_rad_joystick))
+			if(fabs(border->yaw_rad[HIGHER_BORDER]) <= fabs(yaw_rad_joystick))
 			{
 				road->state = STRAIGHT_ROAD;
 				ego->state = NO_COLLISION;
@@ -165,20 +190,20 @@ void drawBorder(Road* road, uint16_t indexCurrentPoint, uint8_t changeCurrentPoi
 				yaw_rad_screen -= yaw_rad_joystick;
 				if(ego->state == COLLISION_WITH_BORDER && fabs(yaw_rad_screen+yaw_rad_joystick) < fabs(yaw_rad_screen))
 					yaw_rad_screen += yaw_rad_joystick; // If collision user cannot make yaw angle bigger
-				yaw_rad[LOWER_BORDER] = yaw_rad_screen - road->point[indexCurrentPoint].rel.yaw * 3.14 / 180;
-				yaw_rad[HIGHER_BORDER] = yaw_rad_screen;
+                border->yaw_rad[LOWER_BORDER] = yaw_rad_screen - road->point[indexCurrentPoint].rel.yaw * 3.14 / 180;
+                border->yaw_rad[HIGHER_BORDER] = yaw_rad_screen;
 
 				if(ego->distanceFromCurrentRoadPoint <= UNIT_ROAD_DISTANCE/2)
-					sizeHigherBorder = displaySizeY / 2 + offsetY;
+                    border->sizeHigherBorder = displaySizeY / 2 + offsetY;
 				else
 				{
-					yaw_rad[LOWER_BORDER] = 0;
-					sizeHigherBorder = displaySizeY;
-					road->side += (double) ego->v_y * tan(yaw_rad[HIGHER_BORDER]);
+                    border->yaw_rad[LOWER_BORDER] = 0;
+                    border->sizeHigherBorder = displaySizeY;
+					road->side += (double) ego->v_y * tan(border->yaw_rad[HIGHER_BORDER]);
 				}
 
 				// Check for collision
-				if(checkIfCollisionWithBorder(yaw_rad,road->side,sizeHigherBorder)) // if between ego vehicle and border less than 3 px -> collision
+				if(checkIfCollisionWithBorder(border,road->side)) // if between ego vehicle and border less than 3 px -> collision
 				{
 					ego->state = COLLISION_WITH_BORDER;
 					ego->v_y = 0;
@@ -192,7 +217,7 @@ void drawBorder(Road* road, uint16_t indexCurrentPoint, uint8_t changeCurrentPoi
 	}
 	else if (road->state == END_CURVE)
 	{
-		sizeHigherBorder = (displaySizeY / 2) + offsetY;
+        border->sizeHigherBorder = (displaySizeY / 2) + offsetY;
 		if (offsetY >= displaySizeY / 2)
 		{
 			road->state = STRAIGHT_ROAD;
@@ -200,9 +225,9 @@ void drawBorder(Road* road, uint16_t indexCurrentPoint, uint8_t changeCurrentPoi
 	}
 	else // road->state == STRAIGHT_ROAD
 	{
-		yaw_rad[HIGHER_BORDER] = 0;
-		yaw_rad[LOWER_BORDER] = 0;
-		sizeHigherBorder = offsetY;
+        border->yaw_rad[HIGHER_BORDER] = 0;
+        border->yaw_rad[LOWER_BORDER] = 0;
+        border->sizeHigherBorder = offsetY;
 	}
 
 	road->side -= (double) ego->v_y * tan(yaw_rad_joystick);
@@ -232,8 +257,8 @@ void drawBorder(Road* road, uint16_t indexCurrentPoint, uint8_t changeCurrentPoi
 		}
 	}
 
-	drawWhiteBorder(yaw_rad, (int) road->side, LOWER_BORDER, sizeHigherBorder);
-	drawWhiteBorder(yaw_rad, (int) road->side, HIGHER_BORDER, sizeHigherBorder);
+	drawWhiteBorder(border, (int) road->side, LOWER_BORDER);
+	drawWhiteBorder(border, (int) road->side, HIGHER_BORDER);
 
 	// This is part of improving game design. It is postponed to the end of project.
 	//drawBlackBox(calcX(offsetY,yaw_rad,road->side),offsetY,yaw_rad);
@@ -247,8 +272,10 @@ void drawBorder(Road* road, uint16_t indexCurrentPoint, uint8_t changeCurrentPoi
  * @brief This functions draws the higher/lower part of the border (left and right).
  *
  */
-void drawWhiteBorder(double yaw_rad[2], int side, TYPE_BORDER typeBorder, int sizeHigherBorder)
+void drawWhiteBorder(Border* border, int side, TYPE_BORDER typeBorder)
 {
+    int sizeHigherBorder = border->sizeHigherBorder;
+    double yaw_rad[2] = {border->yaw_rad[LOWER_BORDER], border->yaw_rad[HIGHER_BORDER]};
 	uint8_t sizeX = SIZE_BORDER;
 	int size[2];
 
@@ -277,18 +304,20 @@ void drawWhiteBorder(double yaw_rad[2], int side, TYPE_BORDER typeBorder, int si
 	gdispDrawPoly(1 + ROAD_SIZE, 0, corners, NB_CORNERS_BORDER, Black);
 }
 
-uint8_t checkIfCollisionWithBorder(double yaw_rad[2], double side, int sizeHigherBorder)
+uint8_t checkIfCollisionWithBorder(Border* border, double side)
 {
-	double distanceEgoToLeftborder = (displaySizeX / 2 - calcX(displaySizeY / 2, yaw_rad, side, sizeHigherBorder) - SIZE_BORDER) * cos(yaw_rad[HIGHER_BORDER]),
-		distanceEgoToRightborder = ( calcX(displaySizeY / 2, yaw_rad, side, sizeHigherBorder) + ROAD_SIZE - VEHICLE_SIZE_X - displaySizeX / 2) * cos(yaw_rad[HIGHER_BORDER]);
+    int sizeHigherBorder = border->sizeHigherBorder;
+    double yaw_rad[2] = {border->yaw_rad[LOWER_BORDER], border->yaw_rad[HIGHER_BORDER]};
+    double distanceEgoToLeftborder = (displaySizeX / 2 - calcX(border, displaySizeY / 2, side) - SIZE_BORDER) * cos(yaw_rad[HIGHER_BORDER]),
+		distanceEgoToRightborder = ( calcX(border, displaySizeY / 2, side) + ROAD_SIZE - VEHICLE_SIZE_X - displaySizeX / 2) * cos(yaw_rad[HIGHER_BORDER]);
 	if(distanceEgoToLeftborder <= 2)
 	{
-		gdispFillCircle((int) round( calcX(displaySizeY / 2, yaw_rad, side, sizeHigherBorder)) + SIZE_BORDER, displaySizeY/2, 2, Red);
+		gdispFillCircle((int) round( calcX(border, displaySizeY / 2, side)) + SIZE_BORDER, displaySizeY/2, 2, Red);
 		return TRUE;
 	}
 	if(distanceEgoToRightborder <= 2)
 	{
-		gdispFillCircle((int) round( calcX(displaySizeY / 2, yaw_rad, side, sizeHigherBorder)) + ROAD_SIZE , displaySizeY/2, 2, Red);
+		gdispFillCircle((int) round( calcX(border, displaySizeY / 2, side)) + ROAD_SIZE , displaySizeY/2, 2, Red);
 		return TRUE;
 	}
 	return FALSE;
@@ -297,10 +326,12 @@ uint8_t checkIfCollisionWithBorder(double yaw_rad[2], double side, int sizeHighe
 /*
  * @brief This function calculates the x position of left road border knowing the y position
  * If the desired value is x position of right road border, please call this function and add
- * ROAD_SIDE to the return value.
+ * ROAD_SIDE to the returned value.
  */
-double calcX(int y, double yaw_rad[2], double side, int sizeHigherBorder)
+double calcX(Border* border, int y, double side)
 {
+    int sizeHigherBorder = border->sizeHigherBorder;
+    double yaw_rad[2] = {border->yaw_rad[LOWER_BORDER], border->yaw_rad[HIGHER_BORDER]};
 	double a = 0, b = 0;
 	if (sizeHigherBorder >= y) // Consider only left higher border
 	{
@@ -313,6 +344,7 @@ double calcX(int y, double yaw_rad[2], double side, int sizeHigherBorder)
 	else
 	{
 		//TODO Dedicace Halim
+        return displaySizeY/2;
 	}
 }
 
@@ -320,7 +352,7 @@ double calcX(int y, double yaw_rad[2], double side, int sizeHigherBorder)
  * @brief This function draws road map and vehicle position
  */
 
-void drawMap(Road* road, Vehicle* ego, Map* map)
+void drawMap(Road* road, Vehicle* ego, Vehicle* bot, Map* map)
 {
 	//Draw map place holder
 	gdispFillArea(displaySizeX - MAP_SIZE_X, displaySizeY - MAP_SIZE_Y,MAP_SIZE_X, MAP_SIZE_Y, White);
@@ -330,12 +362,22 @@ void drawMap(Road* road, Vehicle* ego, Map* map)
 	gdispDrawPoly(0, 0, map, MAP_POINTS, Black);
 
 	//Draw ego vehicle position
-	uint16_t dist = ego->distanceFromCurrentRoadPoint  * UNIT_ROAD_DISTANCE_IN_MAP / UNIT_ROAD_DISTANCE;
-	uint16_t egoMapX = map->point[(ego->currentRoadPoint % (ROAD_POINTS / 2))].x + dist * cos((double) map->orientation[(ego->currentRoadPoint % (ROAD_POINTS / 2))] * 3.14 / 180),
-			 egoMapY = map->point[(ego->currentRoadPoint % (ROAD_POINTS / 2))].y + dist * sin((double) map->orientation[(ego->currentRoadPoint % (ROAD_POINTS / 2))] * 3.14 / 180);
-	gdispFillCircle(egoMapX, egoMapY, 2, Red);
+    drawVehiclePositionOnMap(ego, map);
+    drawVehiclePositionOnMap(bot, map);
 }
 
+void drawVehiclePositionOnMap(Vehicle* vehicle, Map* map)
+{
+    static uint8_t colorIndex = 0;
+    uint16_t dist = vehicle->distanceFromCurrentRoadPoint  * UNIT_ROAD_DISTANCE_IN_MAP / UNIT_ROAD_DISTANCE;
+    uint16_t vehicleMapX = map->point[(vehicle->currentRoadPoint % (ROAD_POINTS / 2))].x + dist * cos((double) map->orientation[(vehicle->currentRoadPoint % (ROAD_POINTS / 2))] * 3.14 / 180),
+            vehicleMapY = map->point[(vehicle->currentRoadPoint % (ROAD_POINTS / 2))].y + dist * sin((double) map->orientation[(vehicle->currentRoadPoint % (ROAD_POINTS / 2))] * 3.14 / 180);
+    if(colorIndex % NUM_VEHICLES == 0)
+        gdispFillCircle(vehicleMapX, vehicleMapY, 2, Red);
+    else if (colorIndex % NUM_VEHICLES == 1)
+        gdispFillCircle(vehicleMapX, vehicleMapY, 2, Green);
+    colorIndex++;
+}
 
 /*
 void drawBlackBox(int x, int y, double yaw_rad) {

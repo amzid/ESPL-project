@@ -31,6 +31,11 @@ static const uint16_t displaySizeX = 320,
 #define CORNER_H_R 				2
 #define CORNER_D_R 				3
 
+typedef struct {
+    double yaw_rad[2];
+    int sizeHigherBorder;
+} Border;
+
 typedef enum {STRAIGHT_ROAD, START_CURVE , MIDDLE_CURVE , END_CURVE} StateRoad;
 typedef enum {LOWER_BORDER,HIGHER_BORDER} TYPE_BORDER;
 
@@ -69,6 +74,7 @@ typedef struct
 /*
  * Vehicle definitions
  */
+#define NUM_VEHICLES            2
 
 #define MAX_JOYSTICK_X 			(255/2)
 #define MAX_JOYSTICK_Y 			(255)
@@ -98,6 +104,7 @@ typedef struct
 {
 	Road* road;
 	Vehicle* ego;
+    Vehicle* bot;
 	Map* map;
 } DataToDraw;
 

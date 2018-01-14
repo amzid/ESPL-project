@@ -25,13 +25,15 @@ int main()
 
 	//Create and initialize road and vehicles
 	Vehicle ego;
+	Vehicle bot;
 	initializeVehicle(&ego);
+	initializeVehicle(&bot);
 	Road road;
 	initializeRoad(&road,&ego);
 	Map map;
 	fillMap(&road,&map);
 
-	DataToDraw dataToDraw = {&road, &ego, &map};
+	DataToDraw dataToDraw = {&road, &ego, &bot, &map};
 
 	// Initializes Tasks with their respective priority
 	xTaskCreate(drawTask, "drawTask", STACK_SIZE, &dataToDraw, 4, NULL);
