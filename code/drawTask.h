@@ -17,6 +17,7 @@ double calcX(Border* border, int y, double side);
 void drawMap(Road* road, Vehicle* ego, Vehicle* bot[NUM_BOTS], Map* map);
 void drawVehiclePositionOnMap(Vehicle* vehicle, Map* map);
 
-void drawBot(Vehicle* bot, Vehicle*  ego, Road* road, Border* border);
+void drawBot(Vehicle* bot, Vehicle*  ego, Border* border, Road* road);
 uint8_t updatePosition(Vehicle* vehicle, Road* road);
+
 #endif

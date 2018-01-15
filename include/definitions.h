@@ -40,7 +40,7 @@ typedef enum {STRAIGHT_ROAD, START_CURVE , MIDDLE_CURVE , END_CURVE} StateRoad;
 typedef enum {LOWER_BORDER,HIGHER_BORDER} TYPE_BORDER;
 
 typedef struct {
-	int x;
+	double x;
 	int y;
 	double yaw;
 } coord;
