@@ -7,12 +7,17 @@
 void drawTask(DataToDraw* dataToDraw);
 
 //local functions
-void drawBorder(Road* road, uint16_t indexCurrentPoint, uint8_t changeCurrentPoint, Vehicle* ego);
-void drawWhiteBorder(double yaw_rad[2], int side, TYPE_BORDER typeBorder,int sizeHigherBorder);
 
-uint8_t checkIfCollisionWithBorder(double yaw_rad[2], double side, int sizeHigherBorder);
-double calcX(int y, double yaw_rad[2], double side, int sizeHigherBorder);
+void drawBorder(Road* road, uint16_t indexCurrentPoint, uint8_t changeCurrentPoint, Vehicle* ego, Border* border);
+void drawWhiteBorder(Border* border, int side, TYPE_BORDER typeBorder);
 
-void drawMap(Road* road, Vehicle* ego, Map* map);
+uint8_t checkIfCollisionWithBorder(Border* border, double side);
+double calcX(Border* border, int y, double side);
+
+void drawMap(Road* road, Vehicle* ego, Vehicle* bot[NUM_BOTS], Map* map);
+void drawVehiclePositionOnMap(Vehicle* vehicle, Map* map);
+
+void drawBot(Vehicle* bot, Vehicle*  ego, Border* border, Road* road);
+uint8_t updatePosition(Vehicle* vehicle, Road* road);
 
 #endif
