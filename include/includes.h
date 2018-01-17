@@ -6,6 +6,8 @@
  **/
 #include "stdio.h"
 #include "stdlib.h"
+#include "string.h"
+
 /* Board includes */
 #include "stm32f4xx.h"
 #include "stm32f4xx_conf.h"

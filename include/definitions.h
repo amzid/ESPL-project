@@ -110,20 +110,53 @@ typedef struct
 } Vehicle;
 
 /*
- * Data to draw
+ * Game struct and game control
  */
+typedef enum {SINGLE_MODE, MULTIPLAYER_MODE} Mode;
+typedef enum {START_MENU, GAME_PLAYING, GAME_PAUSED} GameState;
+typedef enum {NOT_CONNECTED, CONNECTED} ConnectionState;
+typedef enum { NOT_CHOSEN, MODE_CHOSEN} MenuState;
 typedef struct
 {
+    // Game control
+    Mode mode;
+    GameState gameState;
+    ConnectionState connectionState;
+	MenuState menuState;
+    //uint8_t received_input;
+    // Game parts
 	Road* road;
 	Vehicle* ego;
     Vehicle* bot1;
-#if (NUM_BOTS>1)
     Vehicle* bot2;
-#endif
-#if (NUM_BOTS>2)
     Vehicle* bot3;
-#endif
 	Map* map;
-} DataToDraw;
+} Game;
+
+
+/*
+ * Menu definition
+ */
+typedef struct {
+    uint16_t x;
+    uint16_t y;
+    uint8_t sizeX;
+    uint8_t sizeY;
+    char text[50];
+    int  color;
+} Box;
+
+/*
+ * Button definitions
+ */
+#define BUTTON_PRESSED         0
+#define BUTTON_UNPRESSED       1
+
+#define OK_BUTTON_REGISTER     ESPL_Register_Button_A
+#define OK_BUTTON_PIN          ESPL_Pin_Button_A
+
+
+
+
 
 #endif

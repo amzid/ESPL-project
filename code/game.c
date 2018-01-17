@@ -1,31 +1,23 @@
 #include <includes.h>
-#include "drawTask.h"
+#include "game.h"
 
 
 /*
  * @brief This task is used to draw and update all game elements on display.
  *
  */
-void drawTask(DataToDraw* dataToDraw)
+void drawTask(Game* game)
 {
 	char str[100];
 	font_t font1;
 	font1 = gdispOpenFont("DejaVuSans24*");
 
-	Road* road = dataToDraw->road;
-    Vehicle* ego = dataToDraw->ego;
-#if (NUM_BOTS == 1)
-    Vehicle* bot[NUM_BOTS] = {dataToDraw->bot1};
-#endif
-#if (NUM_BOTS == 2)
-    Vehicle* bot[NUM_BOTS] = {dataToDraw->bot1, dataToDraw->bot2};
-#endif
-#if (NUM_BOTS == 3)
-    Vehicle* bot[NUM_BOTS] = {dataToDraw->bot1, dataToDraw->bot2, dataToDraw->bot3};
-    Vehicle* rankedVehicles[NUM_VEHICLES] = {ego, bot[0], bot[1], bot[2]};
-#endif
-	Map* map  = dataToDraw->map;
+	Road* road = game->road;
+    Vehicle* ego = game->ego;
+    Vehicle* bot[NUM_BOTS] = {game->bot1, game->bot2, game->bot3};
+    Map* map  = game->map;
 
+    Vehicle* rankedVehicles[NUM_VEHICLES] = {ego, bot[0], bot[1], bot[2]};
 
     Border border;
     border.sizeHigherBorder = 0;
@@ -60,67 +52,76 @@ void drawTask(DataToDraw* dataToDraw)
     bot[2]->color = BLUE;
     bot[2]->rel.x = 130;
 
+    SemaphoreHandle_t menuToDrawTask;
+
     while (TRUE) {
+        if(game->gameState == GAME_PLAYING) {
+            //clear display
+            gdispClear(White);
 
-		//clear display
-		gdispClear(White);
+            //Read joystick values
+            joystickPosition.x = (uint8_t) (ADC_GetConversionValue(ESPL_ADC_Joystick_2) >> 4) - 255 / 2;
+            joystickPosition.y = (uint8_t) (ADC_GetConversionValue(ESPL_ADC_Joystick_1) >> 4) - 255 / 2;
 
-		//Read joystick values
-		joystickPosition.x = (uint8_t) (ADC_GetConversionValue(ESPL_ADC_Joystick_2) >> 4) - 255 / 2;
-		joystickPosition.y = (uint8_t) (ADC_GetConversionValue(ESPL_ADC_Joystick_1) >> 4) - 255 / 2;
+            // Ego
 
-		// Ego
-		ego->v_x = joystickPosition.x * V_X_MAX / MAX_JOYSTICK_X;
-		ego->a_y = joystickPosition.y * A_Y_MAX / MAX_JOYSTICK_Y;
-        calculateVehicleSpeed(ego, fps);
-        uint8_t changeCurrentPoint = updatePosition(ego, road);
-        ego->rel.x = displaySizeX/2 - calcX(&border,displaySizeY/2,road->side);
+            ego->v_x = joystickPosition.x * V_X_MAX / MAX_JOYSTICK_X;
 
-        // Bots
-        calculateBotAcceleration(rankedVehicles, road);
-        calculateLateralSpeed(rankedVehicles, road, &border);
-        for(int i=0; i<NUM_BOTS; i++) {
-            calculateVehicleSpeed(bot[i], fps);
-            updatePosition(bot[i], road);
-            updateXPosition(bot[i],&border,road);
+            ego->a_y = joystickPosition.y * A_Y_MAX / MAX_JOYSTICK_Y;
+
+            calculateVehicleSpeed(ego, fps);
+            uint8_t changeCurrentPoint = updatePosition(ego, road);
+            ego->rel.x = displaySizeX / 2 - calcX(&border, displaySizeY / 2, road->side);
+
+            // Bots
+            calculateBotAcceleration(rankedVehicles, road);
+            calculateLateralSpeed(rankedVehicles, road, &border);
+            for (int i = 0; i < NUM_BOTS; i++) {
+                calculateVehicleSpeed(bot[i], fps);
+                updatePosition(bot[i], road);
+                updateXPosition(bot[i], &border, road);
+            }
+            updateRanking(ego, bot, road, rankedVehicles);
+            checkCarCollision(rankedVehicles);
+
+            // Show speed
+            sprintf(str, "Ego: %d", (int) ego->v_y);
+            //gdispDrawString(0, 0, str, font1, Black);
+            //sprintf(str, "Ego_dis_CP: %d", (int)ego->distanceFromCurrentRoadPoint);
+            //gdispDrawString(0, 11, str, font1, Black);
+
+
+            for(int i=0; i<NUM_BOTS; i++) {
+                sprintf(str, "Bot%d_VX: %d", i, (int) bot[i]->v_y);
+                gdispDrawString(0, 22 + 33 * i, str, font1, Black);
+                sprintf(str, "Bot%d: %d", i, (int) bot[i]->rel.x);
+                gdispDrawString(0, 33 + 33 * i, str, font1, Black);
+            }
+
+            // DRAW
+            drawBorder(road, ego->currentRoadPoint, changeCurrentPoint, ego, &border);
+            for (int i = 0; i < NUM_BOTS; i++)
+                drawBot(bot[i], ego, &border, road);
+            gdispFillArea(displaySizeX / 2, ego->rel.y, VEHICLE_SIZE_X, VEHICLE_SIZE_Y, Red);
+            drawMap(road, ego, bot, map);
+
+
+            //TODO: Manage end of game
+            if (ego->currentRoadPoint == ROAD_POINTS - 1) {
+                sprintf(str, "FINISH GAME :D");
+                // TODO: stop vehicle
+                gdispDrawString(displaySizeX / 2 - 10, displaySizeY / 2, str, font1, Red);
+            }
+
+            // Wait for display to stop writing
+            xSemaphoreTake(ESPL_DisplayReady, portMAX_DELAY);
+            // swap buffers
+            ESPL_DrawLayer();
+            vTaskDelayUntil(&xLastWakeTime, tickFramerate);
         }
-        updateRanking(ego, bot, road, rankedVehicles);
-        checkCarCollision(rankedVehicles);
-
-		// Show speed
-        sprintf(str, "Ego: %d", (int)ego->v_y);
-        //gdispDrawString(0, 0, str, font1, Black);
-        //sprintf(str, "Ego_dis_CP: %d", (int)ego->distanceFromCurrentRoadPoint);
-        //gdispDrawString(0, 11, str, font1, Black);
-
-        /*
-        for(int i=0; i<NUM_BOTS; i++) {
-            sprintf(str, "Bot%d_VX: %d", i, (int) bot[i]->v_y);
-            gdispDrawString(0, 22 + 33 * i, str, font1, Black);
-            sprintf(str, "Bot%d: %d", i, (int) bot[i]->rel.x);
-            gdispDrawString(0, 33 + 33 * i, str, font1, Black);
+        else {
+            vTaskDelay(20);
         }
-        */
-        // DRAW
-        drawBorder(road, ego->currentRoadPoint, changeCurrentPoint, ego, &border);
-        for(int i=0; i<NUM_BOTS; i++)
-            drawBot(bot[i],ego, &border, road);
-		gdispFillArea(displaySizeX/2, ego->rel.y, VEHICLE_SIZE_X, VEHICLE_SIZE_Y, Red);
-        drawMap(road, ego, bot, map);
-
-
-        //TODO: Manage end of game
-        if (ego->currentRoadPoint == ROAD_POINTS - 1) {
-            sprintf(str, "FINISH GAME :D");
-            // TODO: stop vehicle
-            gdispDrawString(displaySizeX / 2 - 10, displaySizeY / 2, str, font1, Red);
-        }
-
-		// Wait for display to stop writing
-		xSemaphoreTake(ESPL_DisplayReady, portMAX_DELAY);
-		// swap buffers
-		ESPL_DrawLayer();
-		vTaskDelayUntil(&xLastWakeTime, tickFramerate);
 	}
 }
 

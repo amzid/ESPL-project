@@ -7,9 +7,11 @@
  */
 
 #include <includes.h>
-#include "includes.h"
 
-#include "drawTask.h"
+#include "game.h"
+#include "controlGameState.h"
+#include "menu.h"
+#include "multiplayer.h"
 
 
 QueueHandle_t ESPL_RxQueue; // Already defined in ESPL_Functions.h
@@ -24,7 +26,7 @@ int main()
 	// Initialize Board functions and graphics
 	ESPL_SystemInit();
 
-	//Create and initialize road and vehicles
+    //Create and initialize road and vehicles
 	Vehicle ego;
 	Vehicle bot[NUM_BOTS];
 	initializeVehicle(&ego);
@@ -35,21 +37,16 @@ int main()
 	Map map;
 	fillMap(&road,&map);
 
-#if (NUM_BOTS == 1)
-	DataToDraw dataToDraw = {&road, &ego, &bot[0], &map};
-#endif
-#if (NUM_BOTS == 2)
-    DataToDraw dataToDraw = {&road, &ego, &bot[0], &bot[1], &map};
-#endif
-#if (NUM_BOTS == 3)
-    DataToDraw dataToDraw = {&road, &ego, &bot[0], &bot[1], &bot[2], &map};
-#endif
+    Game game = {SINGLE_MODE, START_MENU, NOT_CONNECTED, NOT_CHOSEN, &road, &ego, &bot[0], &bot[1], &bot[2], &map};
+
 	// Initializes Tasks with their respective priority
-	xTaskCreate(drawTask, "drawTask", STACK_SIZE, &dataToDraw, 4, NULL);
+    xTaskCreate(controlGameState, "controlGameState", STACK_SIZE, &game, 5, NULL);
+    xTaskCreate(drawTask, "drawTask", STACK_SIZE, &game, 4, NULL);
+    xTaskCreate(startMenu, "startMenu", STACK_SIZE, &game, 4, NULL);
+    xTaskCreate(uartReceive, "startMenu", STACK_SIZE, &game, 4, NULL);
 
 	// Start FreeRTOS Scheduler
 	vTaskStartScheduler();
-
 }
 
 void initializeVehicle(Vehicle* vehicle)
