@@ -93,7 +93,7 @@
 #define configUSE_IDLE_HOOK				1
 #define configUSE_TICK_HOOK				1
 #define configCPU_CLOCK_HZ				( 168000000 )
-#define configTICK_RATE_HZ				( ( TickType_t ) 1000 )
+#define configTICK_RATE_HZ				( ( TickType_t ) 2000 )
 #define configMAX_PRIORITIES			( 5 )
 #define configMINIMAL_STACK_SIZE		( ( unsigned short ) 130 )
 #define configTOTAL_HEAP_SIZE			( ( size_t ) ( 75 * 1024 ) )
@@ -116,7 +116,7 @@
 
 /* Software timer definitions. */
 #define configUSE_TIMERS				1
-#define configTIMER_TASK_PRIORITY		( 2 )
+#define configTIMER_TASK_PRIORITY		( 10 )
 #define configTIMER_QUEUE_LENGTH		10
 #define configTIMER_TASK_STACK_DEPTH	( configMINIMAL_STACK_SIZE * 2 )
 

@@ -4,7 +4,7 @@
 #include "includes.h"
 
 //Task
-void drawTask(DataToDraw* dataToDraw);
+void drawTask(Game* game);
 
 //local functions
 
