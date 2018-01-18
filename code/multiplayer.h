@@ -3,8 +3,6 @@
 
 #include "includes.h"
 
-#define BYTE_NOT_CHOSEN      0xFF
-
 static const uint8_t    startByte = 0xAA,
                         stopByte  = 0x55;
 

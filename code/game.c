@@ -34,28 +34,6 @@ void drawTask(Game* game)
 
 	int fps = 50;
 
-    ego->color = RED;
-
-    bot[0]->a_y_0 = 1;
-    bot[0]->v_y_max_straight_road = 15;
-    bot[0]->absEffect = 5;
-    bot[0]->color = GREEN;
-    bot[0]->rel.x = 20;
-
-    bot[1]->a_y_0 = 1.2;
-    bot[1]->v_y_max_straight_road = 14;
-    bot[1]->absEffect = 5;
-    bot[1]->color = YELLOW;
-    bot[1]->rel.x = 50;
-
-    bot[2]->a_y_0 = 1.4;
-    bot[2]->v_y_max_straight_road = 13;
-    bot[2]->absEffect = 5;
-    bot[2]->color = BLUE;
-    bot[2]->rel.x = 130;
-
-    uint8_t valuesToSend[20];
-
     while (TRUE) {
         if(game->gameState == GAME_PLAYING) {
             game->taktGame++;

@@ -162,6 +162,15 @@ typedef struct {
 #define OK_BUTTON_REGISTER     ESPL_Register_Button_A
 #define OK_BUTTON_PIN          ESPL_Pin_Button_A
 
+#define EXIT_BUTTON_REGISTER     ESPL_Register_Button_E
+#define EXIT_BUTTON_PIN          ESPL_Pin_Button_E
+
+#define RESET_BUTTON_REGISTER     ESPL_Register_Button_C
+#define RESET_BUTTON_PIN          ESPL_Pin_Button_C
+
+#define PAUSE_BUTTON_REGISTER     ESPL_Register_Button_B
+#define PAUSE_BUTTON_PIN          ESPL_Pin_Button_B
+
 extern uint16_t time_s;
 extern SemaphoreHandle_t game2rcv;
 
