@@ -3,8 +3,12 @@
 
 #include "includes.h"
 
-//SemaphoreHandle_t menuToDrawTask;
 
 void controlGameState(Game* game);
+
+typedef struct{
+    uint8_t currentState;
+    uint8_t lastState;
+} Button;
 
 #endif

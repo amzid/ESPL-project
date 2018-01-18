@@ -107,6 +107,7 @@ typedef struct
 	uint16_t distanceFromCurrentRoadPoint; //Distance to the current road point
 	StateVehicle state;
     uint8_t ranking;
+    uint8_t changeCurrentPoint;
 } Vehicle;
 
 /*
@@ -115,15 +116,16 @@ typedef struct
 typedef enum {SINGLE_MODE, MULTIPLAYER_MODE} Mode;
 typedef enum {START_MENU, GAME_PLAYING, GAME_PAUSED} GameState;
 typedef enum {NOT_CONNECTED, CONNECTED} ConnectionState;
-typedef enum { NOT_CHOSEN, MODE_CHOSEN} MenuState;
+typedef enum { NOT_CHOSEN, MODE_CHOSEN, CTRL_CHOSEN, COURSE_CHOSEN } MenuState;
+typedef enum { SPEED_CTRL, STEERING_CTRL } ControlState;
 typedef struct
 {
     // Game control
-    Mode mode;
-    GameState gameState;
     ConnectionState connectionState;
+    GameState gameState;
+    Mode mode;
 	MenuState menuState;
-    //uint8_t received_input;
+    ControlState controlState;
     // Game parts
 	Road* road;
 	Vehicle* ego;
@@ -131,6 +133,11 @@ typedef struct
     Vehicle* bot2;
     Vehicle* bot3;
 	Map* map;
+
+    uint8_t received_buffer;
+    uint32_t taktUART;
+    uint32_t taktGame;
+
 } Game;
 
 
@@ -155,8 +162,7 @@ typedef struct {
 #define OK_BUTTON_REGISTER     ESPL_Register_Button_A
 #define OK_BUTTON_PIN          ESPL_Pin_Button_A
 
-
-
-
+extern uint16_t time_s;
+extern SemaphoreHandle_t game2rcv;
 
 #endif
