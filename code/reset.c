@@ -55,11 +55,8 @@ void initializeRoad(Road* road, Vehicle* ego)
 
 void fillMap(Road* road, Map* map)
 {
-    uint16_t offsetX = displaySizeX - MAP_SIZE_X + 60,
-            offsetY = displaySizeY - MAP_SIZE_Y + 15;
-
-    double mapX = offsetX, mapY = offsetY;
-    uint16_t  dist = (road->point[0].distanceToNextRoadPoint * UNIT_ROAD_DISTANCE_IN_MAP / UNIT_ROAD_DISTANCE);
+    double mapX = 0, mapY = 0;
+    int16_t  dist = (road->point[0].distanceToNextRoadPoint * UNIT_ROAD_DISTANCE_IN_MAP / UNIT_ROAD_DISTANCE);
     map->point[0].x = (uint16_t) mapX;
     map->point[0].y = (uint16_t) mapY;
     map->orientation[0] = road->point[0].rel.yaw;
@@ -69,8 +66,8 @@ void fillMap(Road* road, Map* map)
     {
         mapX +=  dist * cos((double) map->orientation[i-1] * 3.14 / 180);
         mapY +=  dist * sin((double) map->orientation[i-1] * 3.14 / 180);
-        map->point[i].x = (uint16_t) mapX;
-        map->point[i].y = (uint16_t) mapY;
+        map->point[i].x = (int16_t) mapX;
+        map->point[i].y = (int16_t) mapY;
         map->orientation[i] = map->orientation[i-1] + road->point[i].rel.yaw;
         dist = (road->point[i].distanceToNextRoadPoint * UNIT_ROAD_DISTANCE_IN_MAP / UNIT_ROAD_DISTANCE);
     }

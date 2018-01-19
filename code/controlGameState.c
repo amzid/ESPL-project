@@ -14,9 +14,6 @@ void controlGameState(Game* game) {
     pauseButton.lastState = GPIO_ReadInputDataBit(PAUSE_BUTTON_REGISTER, PAUSE_BUTTON_PIN);
 
     while (TRUE) {
-
-
-
         // update buttons
         okButton.currentState = GPIO_ReadInputDataBit(OK_BUTTON_REGISTER, OK_BUTTON_PIN);
         exitButton.currentState = GPIO_ReadInputDataBit(EXIT_BUTTON_REGISTER, EXIT_BUTTON_PIN);
@@ -24,19 +21,24 @@ void controlGameState(Game* game) {
         pauseButton.currentState = GPIO_ReadInputDataBit(PAUSE_BUTTON_REGISTER, PAUSE_BUTTON_PIN);
 
         // Transitions of state START_MENU
-
         switch(game->gameState){
             case START_MENU:
                 switch(game->menuState){
                     case NOT_CHOSEN:
                         if(okButton.currentState == BUTTON_PRESSED && okButton.lastState == BUTTON_UNPRESSED) {
                             game->menuState = MODE_CHOSEN;
+                            vTaskDelay(1000);
+                        }
+                        break;
+                    case MODE_CHOSEN:
+                        if(okButton.currentState == BUTTON_PRESSED && okButton.lastState == BUTTON_UNPRESSED) {
+                            game->menuState = COURSE_CHOSEN;
                             if (game->mode == SINGLE_MODE)
                                 game->gameState = GAME_PLAYING;
                             vTaskDelay(1000);
                         }
                         break;
-                    case MODE_CHOSEN:
+                    case COURSE_CHOSEN:
                         if(okButton.currentState == BUTTON_PRESSED && okButton.lastState == BUTTON_UNPRESSED) {
                             game->menuState = CTRL_CHOSEN;
                             vTaskDelay(1000);

@@ -18,7 +18,7 @@ static const uint16_t displaySizeX = 320,
  * Road definitions
  */
 #define LAP_POINTS              8
-#define ROAD_POINTS 			2 * LAP_POINTS
+#define ROAD_POINTS 			(2 * LAP_POINTS)
 #define ROAD_SIZE 				150
 #define SIDE 					(displaySizeX/2 - ROAD_SIZE/2)
 #define UNIT_ROAD_DISTANCE  	displaySizeY
@@ -60,15 +60,18 @@ typedef struct
 /*
  * Map definitions
  */
+#define NUM_MAPS                        3
+
 #define MAP_SIZE_X 						displaySizeX/3
 #define MAP_SIZE_Y 						displaySizeY/3
-#define MAP_POINTS 						ROAD_POINTS/2
+#define MAP_POINTS 						(ROAD_POINTS/2)
 #define UNIT_ROAD_DISTANCE_IN_MAP 		3
 
 typedef struct
 {
 	point point[MAP_POINTS];
 	int orientation[MAP_POINTS];
+    int color;
 } Map;
 
 /*
@@ -116,23 +119,25 @@ typedef struct
 typedef enum {SINGLE_MODE, MULTIPLAYER_MODE} Mode;
 typedef enum {START_MENU, GAME_PLAYING, GAME_PAUSED} GameState;
 typedef enum {NOT_CONNECTED, CONNECTED} ConnectionState;
-typedef enum { NOT_CHOSEN, MODE_CHOSEN, CTRL_CHOSEN, COURSE_CHOSEN } MenuState;
+typedef enum { NOT_CHOSEN, MODE_CHOSEN, COURSE_CHOSEN, CTRL_CHOSEN } MenuState;
 typedef enum { SPEED_CTRL, STEERING_CTRL } ControlState;
+typedef enum { INDEX_MAP_1, INDEX_MAP_2, INDEX_MAP_3} ChosenMap;
 typedef struct
 {
     // Game control
-    ConnectionState connectionState;
+    volatile ConnectionState connectionState;
     GameState gameState;
     Mode mode;
 	MenuState menuState;
     ControlState controlState;
+    ChosenMap chosenMap;
     // Game parts
 	Road* road;
 	Vehicle* ego;
     Vehicle* bot1;
     Vehicle* bot2;
     Vehicle* bot3;
-	Map* map;
+	Map* map[3];
 
     uint8_t received_buffer;
     uint32_t taktUART;

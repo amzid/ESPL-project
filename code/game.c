@@ -16,7 +16,7 @@ void drawTask(Game* game)
 	Road* road = game->road;
     Vehicle* ego = game->ego;
     Vehicle* bot[NUM_BOTS] = {game->bot1, game->bot2, game->bot3};
-    Map* map  = game->map;
+    Map* map  = game->map[game->chosenMap];
 
     Vehicle* rankedVehicles[NUM_VEHICLES] = {ego, bot[0], bot[1], bot[2]};
 
@@ -577,7 +577,7 @@ void drawMap(Road* road, Vehicle* ego, Vehicle* bot[NUM_BOTS], Map* map)
 	gdispDrawBox(displaySizeX - MAP_SIZE_X, displaySizeY - MAP_SIZE_Y,MAP_SIZE_X, MAP_SIZE_Y, Black);
 
 	//draw map
-	gdispDrawPoly(0, 0, map, MAP_POINTS, Black);
+	gdispDrawPoly(displaySizeX - MAP_SIZE_X + 60, displaySizeY - MAP_SIZE_Y + 15, map, MAP_POINTS, Black);
 
 	//Draw ego vehicle position
     drawVehiclePositionOnMap(ego, map);
@@ -589,9 +589,9 @@ void drawVehiclePositionOnMap(Vehicle* vehicle, Map* map)
 {
     static uint8_t colorIndex = 0;
 
-    uint16_t dist = vehicle->distanceFromCurrentRoadPoint  * UNIT_ROAD_DISTANCE_IN_MAP / UNIT_ROAD_DISTANCE;
-    uint16_t vehicleMapX = map->point[(vehicle->currentRoadPoint % (ROAD_POINTS / 2))].x + dist * cos((double) map->orientation[(vehicle->currentRoadPoint % (ROAD_POINTS / 2))] * 3.14 / 180),
-            vehicleMapY = map->point[(vehicle->currentRoadPoint % (ROAD_POINTS / 2))].y + dist * sin((double) map->orientation[(vehicle->currentRoadPoint % (ROAD_POINTS / 2))] * 3.14 / 180);
+    int16_t dist = vehicle->distanceFromCurrentRoadPoint  * UNIT_ROAD_DISTANCE_IN_MAP / UNIT_ROAD_DISTANCE;
+    int16_t vehicleMapX = displaySizeX - MAP_SIZE_X + 60 + map->point[(vehicle->currentRoadPoint % (ROAD_POINTS / 2))].x + dist * cos((double) map->orientation[(vehicle->currentRoadPoint % (ROAD_POINTS / 2))] * 3.14 / 180),
+            vehicleMapY = displaySizeY - MAP_SIZE_Y + 15 + map->point[(vehicle->currentRoadPoint % (ROAD_POINTS / 2))].y + dist * sin((double) map->orientation[(vehicle->currentRoadPoint % (ROAD_POINTS / 2))] * 3.14 / 180);
     switch(colorIndex % NUM_VEHICLES){
         case 0:
             gdispFillCircle(vehicleMapX, vehicleMapY, 2, Red);

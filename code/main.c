@@ -33,7 +33,7 @@ int main()
 	Vehicle ego;
 	Vehicle bot[NUM_BOTS];
     Road road;
-    Map map;
+    Map map[3];
 
     // initialize road and vehicles
     ego.color = RED;
@@ -41,16 +41,14 @@ int main()
     bot[1].color = YELLOW;
     bot[2].color = BLUE;
 
-
-
-
     initializeVehicle(&ego);
     for(int i=0; i<NUM_BOTS; i++)
 	    initializeVehicle(&bot[i]);
 	initializeRoad(&road,&ego);
-	fillMap(&road,&map);
+    for(int i=0; i<3; i++)
+	    fillMap(&road,&map[i]);
 
-    Game game = {NOT_CONNECTED, START_MENU, SINGLE_MODE, NOT_CHOSEN, SPEED_CTRL, &road, &ego, &bot[0], &bot[1], &bot[2], &map, 233, 0, 0};
+    Game game = {NOT_CONNECTED, START_MENU, SINGLE_MODE, NOT_CHOSEN, SPEED_CTRL, INDEX_MAP_2, &road, &ego, &bot[0], &bot[1], &bot[2], {&map[0],&map[1],&map[2]}, 233, 0, 0};
 
     vSemaphoreCreateBinary(game2rcv);
 	// Initializes Tasks with their respective priority
