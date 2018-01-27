@@ -19,8 +19,9 @@ QueueHandle_t ESPL_RxQueue; // Already defined in ESPL_Functions.h
 SemaphoreHandle_t ESPL_DisplayReady;
 
 uint16_t time_s = 0;
-SemaphoreHandle_t game2rcv;
-TimerHandle_t xTimer;
+TaskHandle_t drawHdl = NULL, receiveHdl  = NULL;
+TimerHandle_t xTimer=0;
+GameState lastGameStateOtherPlayer = START_MENU;
 
 void vTimerCallback( TimerHandle_t xTimer );
 
@@ -32,7 +33,7 @@ int main()
     // Create road and vehicles
 	Vehicle ego;
 	Vehicle bot[NUM_BOTS];
-    Road road;
+    Road road[3];
     Map map[3];
 
     // initialize road and vehicles
@@ -44,20 +45,21 @@ int main()
     initializeVehicle(&ego);
     for(int i=0; i<NUM_BOTS; i++)
 	    initializeVehicle(&bot[i]);
-	initializeRoad(&road,&ego);
     for(int i=0; i<3; i++)
-	    fillMap(&road,&map[i]);
+	    initializeRoad(&road[i],&ego,i);
 
-    Game game = {NOT_CONNECTED, START_MENU, SINGLE_MODE, NOT_CHOSEN, SPEED_CTRL, INDEX_MAP_2, &road, &ego, &bot[0], &bot[1], &bot[2], {&map[0],&map[1],&map[2]}, 233, 0, 0};
+    for(int i=0; i<3; i++)
+	    fillMap(&road[i],&map[i]);
 
-    vSemaphoreCreateBinary(game2rcv);
+    Game game = {NOT_CONNECTED, START_MENU, SINGLE_MODE, NOT_CHOSEN, SPEED_CTRL, INDEX_MAP_2, {&road[0],&road[1],&road[2]}, &ego, &bot[0], &bot[1], &bot[2], {&map[0],&map[1],&map[2]}, START_MENU, 233, 0, 0, 0,0,1};
+
 	// Initializes Tasks with their respective priority
     xTaskCreate(controlGameState, "controlGameState", STACK_SIZE, &game, 5, NULL);
-    xTaskCreate(drawTask, "drawTask", STACK_SIZE, &game, 4, NULL);
+    xTaskCreate(drawTask, "drawTask", STACK_SIZE, &game, 5, &drawHdl);
     xTaskCreate(startMenu, "startMenu", STACK_SIZE, &game, 4, NULL);
-    xTaskCreate(uartReceive, "startMenu", STACK_SIZE, &game, 5, NULL);
-    xTimer = xTimerCreate("Timer", configTICK_RATE_HZ, pdTRUE, ( void * ) 0, vTimerCallback); // every second a callback
-    xTimerStart( xTimer, 0 );
+    xTaskCreate(uartReceive, "startMenu", STACK_SIZE, &game, 5, &receiveHdl);
+    xTimer = xTimerCreate("Timer", configTICK_RATE_HZ/100, pdTRUE, ( void * ) 0, vTimerCallback); // every second a callback
+
 
 	// Start FreeRTOS Scheduler
 	vTaskStartScheduler();

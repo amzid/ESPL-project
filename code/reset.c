@@ -19,35 +19,58 @@ void initializeVehicle(Vehicle* vehicle)
         case GREEN:
             vehicle->a_y_0 = 1;
             vehicle->v_y_max_straight_road = 15;
-            vehicle->absEffect = 5;
+            vehicle->absEffect = 0.3;
             vehicle->rel.x = 20;
             break;
         case YELLOW:
             vehicle->a_y_0 = 1.2;
             vehicle->v_y_max_straight_road = 14;
-            vehicle->absEffect = 5;
+            vehicle->absEffect = 0.4;
             vehicle->rel.x = 50;
             break;
         case BLUE:
             vehicle->a_y_0 = 1.4;
             vehicle->v_y_max_straight_road = 13;
-            vehicle->absEffect = 5;
+            vehicle->absEffect = 0.3;
             vehicle->rel.x = 130;
             break;
     }
 }
 
-void initializeRoad(Road* road, Vehicle* ego)
-{
+void initializeRoad(Road* road, Vehicle* ego, int index) {
     road->side = (double) SIDE;
     road->state = STRAIGHT_ROAD;
-    for (int i = 0; i < LAP_POINTS; i++) {
+    road->point[0].rel.yaw = 45;
+
+    for (int i = 0; i < LAP_POINTS + 1; i++) {
         road->point[i].rel.x = displaySizeX / 2;
-        road->point[i].rel.yaw = 45;
-        road->point[i].distanceToNextRoadPoint = 8 * UNIT_ROAD_DISTANCE;
+        road->point[i].distanceToNextRoadPoint = 4 * UNIT_ROAD_DISTANCE;
     }
+
+    switch (index){
+        case 0:
+        case 1:
+        case 2:
+            road->point[1].rel.yaw = 45;
+            road->point[2].rel.yaw = -45;
+            road->point[3].rel.yaw = -45;
+            road->point[4].rel.yaw = 45;
+            road->point[5].rel.yaw = 45;
+            road->point[6].rel.yaw = 45;
+            road->point[7].rel.yaw = 45;
+            road->point[8].rel.yaw = 45;
+            road->point[9].rel.yaw = 45;
+            road->point[10].rel.yaw = -45;
+            road->point[11].rel.yaw = -45;
+            road->point[12].rel.yaw = 45;
+            road->point[13].rel.yaw = 45;
+            road->point[14].rel.yaw = 45;
+            road->point[15].rel.yaw = 45;
+            road->point[ROAD_POINTS / 2].rel.yaw = 45;
+            break;
+}
     //Copy Road for second lap
-    for (int i = ROAD_POINTS / 2; i < ROAD_POINTS + 4; i++) {
+    for (int i = ROAD_POINTS / 2 + 1; i < ROAD_POINTS + 4; i++) {
         road->point[i] = road->point[i - ROAD_POINTS / 2];
     }
     road->point[ego->currentRoadPoint].rel.y = displaySizeY / 2;
@@ -59,7 +82,7 @@ void fillMap(Road* road, Map* map)
     int16_t  dist = (road->point[0].distanceToNextRoadPoint * UNIT_ROAD_DISTANCE_IN_MAP / UNIT_ROAD_DISTANCE);
     map->point[0].x = (uint16_t) mapX;
     map->point[0].y = (uint16_t) mapY;
-    map->orientation[0] = road->point[0].rel.yaw;
+    map->orientation[0] = road->point[ROAD_POINTS/2].rel.yaw;
 
     // generate road map position
     for (int i = 1; i < MAP_POINTS; i++)

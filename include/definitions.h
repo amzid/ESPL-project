@@ -17,7 +17,7 @@ static const uint16_t displaySizeX = 320,
 /*
  * Road definitions
  */
-#define LAP_POINTS              8
+#define LAP_POINTS              16
 #define ROAD_POINTS 			(2 * LAP_POINTS)
 #define ROAD_SIZE 				150
 #define SIDE 					(displaySizeX/2 - ROAD_SIZE/2)
@@ -55,6 +55,7 @@ typedef struct
 	double side;
 	RoadPoint point[ROAD_POINTS+4]; // 4 additional points to make sure of a right finish
 	StateRoad state;
+    int highScores[3];
 } Road;
 
 /*
@@ -132,19 +133,23 @@ typedef struct
     ControlState controlState;
     ChosenMap chosenMap;
     // Game parts
-	Road* road;
+	Road* road[3];
 	Vehicle* ego;
     Vehicle* bot1;
     Vehicle* bot2;
     Vehicle* bot3;
 	Map* map[3];
 
+    uint8_t gameStateOtherPlayer;
     uint8_t received_buffer;
     uint32_t taktUART;
     uint32_t taktGame;
-
+    uint8_t elapsed_s;
+    uint16_t elapsed_ms;
+    uint8_t firstTime;
 } Game;
 
+#define INITIAL_HIGH_SCORE 10000
 
 /*
  * Menu definition
@@ -176,7 +181,12 @@ typedef struct {
 #define PAUSE_BUTTON_REGISTER     ESPL_Register_Button_B
 #define PAUSE_BUTTON_PIN          ESPL_Pin_Button_B
 
+extern TimerHandle_t xTimer;
 extern uint16_t time_s;
-extern SemaphoreHandle_t game2rcv;
+extern TaskHandle_t drawHdl, receiveHdl;
+
+#define BYTE_RESET                0xFF
+
+extern GameState lastGameStateOtherPlayer;
 
 #endif

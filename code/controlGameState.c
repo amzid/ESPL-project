@@ -1,6 +1,8 @@
 #include <includes.h>
 #include "controlGameState.h"
 #include "reset.h"
+#include "multiplayer.h"
+
 
 void controlGameState(Game* game) {
     char str[100];
@@ -13,7 +15,14 @@ void controlGameState(Game* game) {
     resetButton.lastState = GPIO_ReadInputDataBit(RESET_BUTTON_REGISTER, RESET_BUTTON_PIN);
     pauseButton.lastState = GPIO_ReadInputDataBit(PAUSE_BUTTON_REGISTER, PAUSE_BUTTON_PIN);
 
+    uint8_t valuesToSend[2];
+    uint8_t lastGameStateOtherPlayer = game->gameStateOtherPlayer;
+
     while (TRUE) {
+
+        if(game->connectionState == NOT_CONNECTED && (game->gameState == GAME_PLAYING || game->gameState == GAME_PAUSED))
+            game->mode = SINGLE_MODE;
+
         // update buttons
         okButton.currentState = GPIO_ReadInputDataBit(OK_BUTTON_REGISTER, OK_BUTTON_PIN);
         exitButton.currentState = GPIO_ReadInputDataBit(EXIT_BUTTON_REGISTER, EXIT_BUTTON_PIN);
@@ -33,8 +42,10 @@ void controlGameState(Game* game) {
                     case MODE_CHOSEN:
                         if(okButton.currentState == BUTTON_PRESSED && okButton.lastState == BUTTON_UNPRESSED) {
                             game->menuState = COURSE_CHOSEN;
-                            if (game->mode == SINGLE_MODE)
+                            if (game->mode == SINGLE_MODE) {
                                 game->gameState = GAME_PLAYING;
+                                xTimerStart(xTimer, 0);
+                            }
                             vTaskDelay(1000);
                         }
                         break;
@@ -58,27 +69,71 @@ void controlGameState(Game* game) {
                     initializeVehicle(game->bot1);
                     initializeVehicle(game->bot2);
                     initializeVehicle(game->bot3);
-                    initializeRoad(game->road,game->ego);
-                    fillMap(game->road,game->map);
+                    initializeRoad(game->road[game->chosenMap],game->ego,game->chosenMap);
+                    game->firstTime = 1;
+                    game->taktGame = 0;
+                    game->taktUART = 0;
+                    time_s = 0;
+                    break;
                 }
                 if(resetButton.currentState == BUTTON_PRESSED && resetButton.lastState == BUTTON_UNPRESSED) {
                     initializeVehicle(game->ego);
                     initializeVehicle(game->bot1);
                     initializeVehicle(game->bot2);
                     initializeVehicle(game->bot3);
-                    initializeRoad(game->road,game->ego);
-                    fillMap(game->road,game->map);
+                    initializeRoad(game->road[game->chosenMap],game->ego,game->chosenMap);
+                    valuesToSend[0] = 51;
+                    valuesToSend[1] = BYTE_RESET;
+                    sendviaUart(valuesToSend, 2);
+                    sendviaUart(valuesToSend, 2);
+                    time_s = 0;
+                    xTimerStart(xTimer, 0);
+                    game->taktGame = 0;
+                    game->taktUART = 0;
+                    game->firstTime = 1;
+                    vTaskDelay(100);
+                    break;
                 }
                 if(pauseButton.currentState == BUTTON_PRESSED && pauseButton.lastState == BUTTON_UNPRESSED) {
                     game->gameState = GAME_PAUSED;
-                    vTaskDelay(500);
+                    valuesToSend[0] = 32;
+                    valuesToSend[1] = GAME_PAUSED;
+                    sendviaUart(valuesToSend, 2);
+                    xTimerStop(xTimer, 0);
+                    //vTaskDelay(500);
+                    break;
+                }
+                switch(game->gameStateOtherPlayer) {
+
+                    case START_MENU:
+                        if(lastGameStateOtherPlayer == GAME_PLAYING)
+                            game->mode = SINGLE_MODE;
+                        break;
+
+                    case GAME_PAUSED:
+                            game->gameState = GAME_PAUSED;
+                        break;
+                    case BYTE_RESET:
+                        initializeVehicle(game->ego);
+                        initializeVehicle(game->bot1);
+                        initializeVehicle(game->bot2);
+                        initializeVehicle(game->bot3);
+                        initializeRoad(game->road[game->chosenMap],game->ego,game->chosenMap);
+                        game->firstTime = 1;
+                        game->taktGame = 0;
+                        game->taktUART = 0;
+                        time_s = 0;
+                        xTimerStart(xTimer, 0);
+                        break;
                 }
                 break;
 
             case GAME_PAUSED:
                 if(pauseButton.currentState == BUTTON_PRESSED && pauseButton.lastState == BUTTON_UNPRESSED) {
                     game->gameState = GAME_PLAYING;
+                    xTimerStart(xTimer, 0);
                     vTaskDelay(500);
+                    break;
                 }
                 if(exitButton.currentState == BUTTON_PRESSED && exitButton.lastState == BUTTON_UNPRESSED) {
                     game->gameState = START_MENU;
@@ -90,17 +145,24 @@ void controlGameState(Game* game) {
                     initializeVehicle(game->bot1);
                     initializeVehicle(game->bot2);
                     initializeVehicle(game->bot3);
-                    initializeRoad(game->road,game->ego);
-                    fillMap(game->road,game->map);
+                    initializeRoad(game->road[game->chosenMap],game->ego,game->chosenMap);
+                    game->firstTime = 1;
+                    game->taktGame = 0;
+                    game->taktUART = 0;
+                    time_s = 0;
+                    break;
                 }
-                if(resetButton.currentState == BUTTON_PRESSED && resetButton.lastState == BUTTON_UNPRESSED) {
-                    game->gameState = GAME_PLAYING;
-                    initializeVehicle(game->ego);
-                    initializeVehicle(game->bot1);
-                    initializeVehicle(game->bot2);
-                    initializeVehicle(game->bot3);
-                    initializeRoad(game->road,game->ego);
-                    fillMap(game->road,game->map);
+                switch(game->gameStateOtherPlayer) {
+                    case START_MENU:
+                        if(lastGameStateOtherPlayer == GAME_PAUSED)
+                            game->mode = SINGLE_MODE;
+                        break;
+                    case GAME_PLAYING:
+                        if(lastGameStateOtherPlayer==GAME_PAUSED)
+                        {
+                            game->gameState = GAME_PLAYING;
+                        }
+                        break;
                 }
                 break;
         }
@@ -110,5 +172,6 @@ void controlGameState(Game* game) {
         exitButton.lastState = exitButton.currentState;
         resetButton.lastState = resetButton.currentState;
         pauseButton.lastState = pauseButton.currentState;
+        lastGameStateOtherPlayer = game->gameStateOtherPlayer;
     }
 }
