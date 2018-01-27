@@ -22,7 +22,7 @@ void uartReceive(Game* game) {
     char buffer[15]; // Start byte, 6 data bytes, End byte
     uint8_t temp;
     while (TRUE) {
-        temp = xQueueReceive(ESPL_RxQueue, &input, 2000);
+        temp = xQueueReceive(ESPL_RxQueue, &input, 5000);
         game->connectionState = temp;
         // decode package by buffer position
         switch (game->gameState) {
@@ -126,29 +126,30 @@ void receiveWhileGamePlaying(Game* game, uint8_t input, uint8_t* pos, char buffe
             if (input == stopByte) {
                 game->received_buffer = (uint8_t) buffer[1];
                 if (game->mode == MULTIPLAYER_MODE) {
-                    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-                    // First Buffer
-                    game->taktUART++;
-                    if (game->controlState == SPEED_CTRL) {
-                        game->ego->v_x = ((uint8_t) buffer[1] - 255 / 2) * V_X_MAX / MAX_JOYSTICK_X;
-                        game->bot1->rel.x = buffer[3];
-                        game->bot2->rel.x = buffer[4];
-                        game->bot3->rel.x = buffer[5];
-                        game->ego->currentRoadPoint = buffer[6];
-                        game->ego->distanceFromCurrentRoadPoint = *((uint16_t*)(buffer+7));
-                        game->road[game->chosenMap]->side = (double) buffer[9];
-                    }
-                    else if (game->controlState == STEERING_CTRL) {
-                        game->ego->v_y = buffer[1] + (double) buffer[3] / 100.0;
-                        game->bot1->currentRoadPoint= buffer[4];
-                        game->bot1->distanceFromCurrentRoadPoint = *((uint16_t*)(buffer+5));
-                        game->bot2->currentRoadPoint= buffer[7];
-                        game->bot2->distanceFromCurrentRoadPoint = *((uint16_t*)(buffer+8));
-                        game->bot3->currentRoadPoint= buffer[10];
-                        game->bot3->distanceFromCurrentRoadPoint = *((uint16_t*)(buffer+11));
-                    }
                     // Second buffer: game state of other player
                     game->gameStateOtherPlayer = (uint8_t) buffer[2];
+                    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+                    if(game->gameStateOtherPlayer == GAME_PLAYING) {
+                        // First Buffer
+                        game->taktUART++;
+                        if (game->controlState == SPEED_CTRL) {
+                            game->ego->v_x = ((uint8_t) buffer[1] - 255 / 2) * V_X_MAX / MAX_JOYSTICK_X;
+                            game->bot1->rel.x = buffer[3];
+                            game->bot2->rel.x = buffer[4];
+                            game->bot3->rel.x = buffer[5];
+                            game->ego->currentRoadPoint = buffer[6];
+                            game->ego->distanceFromCurrentRoadPoint = *((uint16_t *) (buffer + 7));
+                            game->road[game->chosenMap]->side = (double) buffer[9];
+                        } else if (game->controlState == STEERING_CTRL) {
+                            game->ego->v_y = buffer[1] + (double) buffer[3] / 100.0;
+                            game->bot1->currentRoadPoint = buffer[4];
+                            game->bot1->distanceFromCurrentRoadPoint = *((uint16_t *) (buffer + 5));
+                            game->bot2->currentRoadPoint = buffer[7];
+                            game->bot2->distanceFromCurrentRoadPoint = *((uint16_t *) (buffer + 8));
+                            game->bot3->currentRoadPoint = buffer[10];
+                            game->bot3->distanceFromCurrentRoadPoint = *((uint16_t *) (buffer + 11));
+                        }
+                    }
                     xTaskNotifyGive(drawHdl);
                 }
                 *pos = 0;

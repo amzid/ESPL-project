@@ -18,11 +18,11 @@ void controlGameState(Game* game) {
     uint8_t valuesToSend[SIZE_VALUES_TO_SEND];
     for(int i=0; i<SIZE_VALUES_TO_SEND; i++)
         valuesToSend[i] = 0;
-    uint8_t lastGameStateOtherPlayer = game->gameStateOtherPlayer;
+    volatile uint8_t lastGameStateOtherPlayer = game->gameStateOtherPlayer;
 
     while (TRUE) {
 
-        if(game->connectionState == NOT_CONNECTED && (game->gameState == GAME_PLAYING || game->gameState == GAME_PAUSED))
+        if(game->connectionState == NOT_CONNECTED && (game->gameState == GAME_PLAYING))// || game->gameState == GAME_PAUSED))
             game->mode = SINGLE_MODE;
 
         // update buttons
@@ -88,6 +88,7 @@ void controlGameState(Game* game) {
                     valuesToSend[1] = BYTE_RESET;
                     sendviaUart(valuesToSend, SIZE_VALUES_TO_SEND);
                     time_s = 0;
+                    xTaskNotifyGive(receiveHdl);
                     xTimerStart(xTimer, 0);
                     game->taktGame = 0;
                     game->taktUART = 0;
@@ -101,7 +102,8 @@ void controlGameState(Game* game) {
                     valuesToSend[1] = GAME_PAUSED;
                     sendviaUart(valuesToSend, SIZE_VALUES_TO_SEND);
                     xTimerStop(xTimer, 0);
-                    //vTaskDelay(500);
+                    xTaskNotifyGive(drawHdl);
+                    vTaskDelay(2000);
                     break;
                 }
                 switch(game->gameStateOtherPlayer) {
@@ -113,6 +115,7 @@ void controlGameState(Game* game) {
 
                     case GAME_PAUSED:
                             game->gameState = GAME_PAUSED;
+                            xTaskNotifyGive(drawHdl);
                         break;
                     case BYTE_RESET:
                         initializeVehicle(game->ego);
@@ -124,6 +127,7 @@ void controlGameState(Game* game) {
                         game->taktGame = 0;
                         game->taktUART = 0;
                         time_s = 0;
+                        xTaskNotifyGive(drawHdl);
                         xTimerStart(xTimer, 0);
                         break;
                 }
@@ -132,8 +136,10 @@ void controlGameState(Game* game) {
             case GAME_PAUSED:
                 if(pauseButton.currentState == BUTTON_PRESSED && pauseButton.lastState == BUTTON_UNPRESSED) {
                     game->gameState = GAME_PLAYING;
+                    xTaskNotifyGive(drawHdl);
                     xTimerStart(xTimer, 0);
-                    vTaskDelay(500);
+                    lastGameStateOtherPlayer = game->gameStateOtherPlayer;
+                    vTaskDelay(2000);
                     break;
                 }
                 if(exitButton.currentState == BUTTON_PRESSED && exitButton.lastState == BUTTON_UNPRESSED) {
@@ -162,6 +168,7 @@ void controlGameState(Game* game) {
                         if(lastGameStateOtherPlayer==GAME_PAUSED)
                         {
                             game->gameState = GAME_PLAYING;
+                            xTaskNotifyGive(drawHdl);
                         }
                         break;
                 }

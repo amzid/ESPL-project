@@ -197,7 +197,7 @@ void drawTask(Game* game)
             sprintf(str, "Game: %d ", (int) game->taktGame);
             gdispDrawString(0, 22, str, font1, Black);
 
-            sprintf(str, "Vy: %d.%d", (int)ego->v_y, (int) (100 * ego->v_y) % 100);
+            sprintf(str, "S.Oth.P:: %d", game->gameStateOtherPlayer);
             gdispDrawString(0, 44, str, font1, Black);
 
             sprintf(str, "Vx: %d.%d", (int)ego->v_x, (int) (100 * ego->v_x) % 100);
@@ -223,6 +223,8 @@ void drawTask(Game* game)
             gdispDrawString(0, 101, str, font1, Black);
             sprintf(str, "ego distance %d",ego->distanceFromCurrentRoadPoint);
             gdispDrawString(0, 111, str, font1, Black);
+            sprintf(str, "mode %d",game->mode);
+            gdispDrawString(0, 133, str, font1, Black);
 
             //TODO: Manage end of game
             if (ego->currentRoadPoint == ROAD_POINTS - 1 && ego->distanceFromCurrentRoadPoint >= road->point[ROAD_POINTS-1].distanceToNextRoadPoint - 3 * UNIT_ROAD_DISTANCE) {
@@ -247,9 +249,21 @@ void drawTask(Game* game)
         }
         else {
             if(game->gameState == GAME_PAUSED){
-                valuesToSend[0] = 41;
+                //gdispClear(White);
+                ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+                valuesToSend[0]++;
                 valuesToSend[1] = game->gameState;
                 sendviaUart(valuesToSend, SIZE_VALUES_TO_SEND);
+                /*
+
+sprintf(str, "Hallo %d",valuesToSend[0]);
+gdispDrawString(0, 144, str, font1, Black);
+sprintf(str, "mode %d",game->mode);
+gdispDrawString(0, 133, str, font1, Black);
+ */
+                xTaskNotifyGive(receiveHdl);
+                xSemaphoreTake(ESPL_DisplayReady, portMAX_DELAY);
+                ESPL_DrawLayer();
             }
             else
                 vTaskDelay(20);
