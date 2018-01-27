@@ -19,7 +19,7 @@ void sendviaUart(uint8_t* valueToSend, uint8_t nbValuesToSend) {
 void uartReceive(Game* game) {
     char input;
     uint8_t pos = 0;
-    char buffer[10]; // Start byte, 6 data bytes, End byte
+    char buffer[15]; // Start byte, 6 data bytes, End byte
     uint8_t temp;
     while (TRUE) {
         temp = xQueueReceive(ESPL_RxQueue, &input, 2000);
@@ -38,7 +38,7 @@ void uartReceive(Game* game) {
 }
 
 
-void receiveInStartMenu(Game* game, uint8_t input, uint8_t* pos, char buffer[5]){
+void receiveInStartMenu(Game* game, uint8_t input, uint8_t* pos, char buffer[15]){
     switch(*pos) {
         // start byte
         case 0:
@@ -49,13 +49,20 @@ void receiveInStartMenu(Game* game, uint8_t input, uint8_t* pos, char buffer[5])
         case 3:
         case 4:
         case 5:
+        case 6:
+        case 7:
+        case 8:
+        case 9:
+        case 10:
+        case 11:
+        case 12:
             // read received data in buffer
             buffer[*pos] = input;
             (*pos)++;
             break;
-        case 6:
+        case 13:
             if (input == stopByte) {
-                game->received_buffer = (uint8_t) buffer[2];
+                game->received_buffer = (uint8_t) buffer[1];
                 game->gameStateOtherPlayer = (uint8_t) buffer[2];
                 if (buffer[1] >= MODE_CHOSEN) {
                     if (buffer[3] == SINGLE_MODE)
@@ -69,14 +76,16 @@ void receiveInStartMenu(Game* game, uint8_t input, uint8_t* pos, char buffer[5])
                             if (buffer[1] == CTRL_CHOSEN) {
                                 game->controlState = (buffer[5] + 1) % 2;
                                 game->menuState = CTRL_CHOSEN;
-                                uint8_t valuesToSend[5];
-                                valuesToSend[0] = (uint8_t) (game->menuState);
-                                valuesToSend[1] = (uint8_t) (game->gameState);
-                                valuesToSend[2] = (uint8_t) (game->mode);
-                                valuesToSend[3] = (uint8_t) (game->chosenMap);
-                                valuesToSend[4] = (uint8_t) (game->controlState);
-                                sendviaUart(valuesToSend,5);
-                                vTaskDelay(50);
+                                if(buffer[12]!=1) {
+                                    uint8_t valuesToSend[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1};
+                                    valuesToSend[0] = (uint8_t) (game->menuState);
+                                    valuesToSend[1] = (uint8_t) (game->gameState);
+                                    valuesToSend[2] = (uint8_t) (game->mode);
+                                    valuesToSend[3] = (uint8_t) (game->chosenMap);
+                                    valuesToSend[4] = (uint8_t) (game->controlState);
+                                    sendviaUart(valuesToSend, 12);
+                                    vTaskDelay(20);
+                                }
                                 game->gameState = GAME_PLAYING;
                                 xTaskNotifyGive(drawHdl);
                                 vTaskDelay(5);
@@ -90,7 +99,7 @@ void receiveInStartMenu(Game* game, uint8_t input, uint8_t* pos, char buffer[5])
 }
 
 
-void receiveWhileGamePlaying(Game* game, uint8_t input, uint8_t* pos, char buffer[5]){
+void receiveWhileGamePlaying(Game* game, uint8_t input, uint8_t* pos, char buffer[15]){
     //volatile static GameState lastGameStateOtherPlayer = START_MENU;
     switch(*pos) {
         // start byte
@@ -102,11 +111,18 @@ void receiveWhileGamePlaying(Game* game, uint8_t input, uint8_t* pos, char buffe
         case 3:
         case 4:
         case 5:
+        case 6:
+        case 7:
+        case 8:
+        case 9:
+        case 10:
+        case 11:
+        case 12:
             // read received data in buffer
             buffer[*pos] = input;
             (*pos)++;
             break;
-        case 6:
+        case 13:
             if (input == stopByte) {
                 game->received_buffer = (uint8_t) buffer[1];
                 if (game->mode == MULTIPLAYER_MODE) {
@@ -115,11 +131,21 @@ void receiveWhileGamePlaying(Game* game, uint8_t input, uint8_t* pos, char buffe
                     game->taktUART++;
                     if (game->controlState == SPEED_CTRL) {
                         game->ego->v_x = ((uint8_t) buffer[1] - 255 / 2) * V_X_MAX / MAX_JOYSTICK_X;
-                        game->bot1->v_y = buffer[3] + (double) buffer[4] / 100.0;
+                        game->bot1->rel.x = buffer[3];
+                        game->bot2->rel.x = buffer[4];
+                        game->bot3->rel.x = buffer[5];
+                        game->ego->currentRoadPoint = buffer[6];
+                        game->ego->distanceFromCurrentRoadPoint = *((uint16_t*)(buffer+7));
+                        game->road[game->chosenMap]->side = (double) buffer[9];
                     }
                     else if (game->controlState == STEERING_CTRL) {
                         game->ego->v_y = buffer[1] + (double) buffer[3] / 100.0;
-                        game->bot1->v_x = buffer[4] + (double) buffer[5] / 100.0;
+                        game->bot1->currentRoadPoint= buffer[4];
+                        game->bot1->distanceFromCurrentRoadPoint = *((uint16_t*)(buffer+5));
+                        game->bot2->currentRoadPoint= buffer[7];
+                        game->bot2->distanceFromCurrentRoadPoint = *((uint16_t*)(buffer+8));
+                        game->bot3->currentRoadPoint= buffer[10];
+                        game->bot3->distanceFromCurrentRoadPoint = *((uint16_t*)(buffer+11));
                     }
                     // Second buffer: game state of other player
                     game->gameStateOtherPlayer = (uint8_t) buffer[2];

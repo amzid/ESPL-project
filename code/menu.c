@@ -14,7 +14,9 @@ void startMenu(Game* game){
     font_t font1;
     font1 = gdispOpenFont("DejaVuSans24*");
     volatile ConnectionState lastConnectionState = NOT_CONNECTED;
-    uint8_t valuesToSend[4];
+    uint8_t valuesToSend[15];
+    for(int i=0; i<15; i++)
+            valuesToSend[i]=0;
     while(TRUE){
         if(game->gameState == START_MENU) {
             //clear display
@@ -61,7 +63,7 @@ void startMenu(Game* game){
             valuesToSend[2] = (uint8_t) (game->mode);
             valuesToSend[3] = (uint8_t) (game->chosenMap);
             valuesToSend[4] = (uint8_t) (game->controlState);
-            sendviaUart(valuesToSend,5);
+            sendviaUart(valuesToSend,12);
 
             drawBox(&single_mode);
             drawBox(&multi_mode);

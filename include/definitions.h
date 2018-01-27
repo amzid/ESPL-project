@@ -186,7 +186,7 @@ extern uint16_t time_s;
 extern TaskHandle_t drawHdl, receiveHdl;
 
 #define BYTE_RESET                0xFF
-
+#define SIZE_VALUES_TO_SEND       12
 extern GameState lastGameStateOtherPlayer;
 
 #endif

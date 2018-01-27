@@ -15,7 +15,9 @@ void controlGameState(Game* game) {
     resetButton.lastState = GPIO_ReadInputDataBit(RESET_BUTTON_REGISTER, RESET_BUTTON_PIN);
     pauseButton.lastState = GPIO_ReadInputDataBit(PAUSE_BUTTON_REGISTER, PAUSE_BUTTON_PIN);
 
-    uint8_t valuesToSend[2];
+    uint8_t valuesToSend[SIZE_VALUES_TO_SEND];
+    for(int i=0; i<SIZE_VALUES_TO_SEND; i++)
+        valuesToSend[i] = 0;
     uint8_t lastGameStateOtherPlayer = game->gameStateOtherPlayer;
 
     while (TRUE) {
@@ -84,8 +86,7 @@ void controlGameState(Game* game) {
                     initializeRoad(game->road[game->chosenMap],game->ego,game->chosenMap);
                     valuesToSend[0] = 51;
                     valuesToSend[1] = BYTE_RESET;
-                    sendviaUart(valuesToSend, 2);
-                    sendviaUart(valuesToSend, 2);
+                    sendviaUart(valuesToSend, SIZE_VALUES_TO_SEND);
                     time_s = 0;
                     xTimerStart(xTimer, 0);
                     game->taktGame = 0;
@@ -98,7 +99,7 @@ void controlGameState(Game* game) {
                     game->gameState = GAME_PAUSED;
                     valuesToSend[0] = 32;
                     valuesToSend[1] = GAME_PAUSED;
-                    sendviaUart(valuesToSend, 2);
+                    sendviaUart(valuesToSend, SIZE_VALUES_TO_SEND);
                     xTimerStop(xTimer, 0);
                     //vTaskDelay(500);
                     break;
