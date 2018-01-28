@@ -12,7 +12,7 @@ static const uint16_t displaySizeX = 320,
 /*
  * FreeRTOS definitions
  */
-#define STACK_SIZE 2000
+#define STACK_SIZE 800
 
 /*
  * Road definitions
@@ -161,6 +161,7 @@ typedef struct {
     uint8_t sizeY;
     char text[50];
     int  color;
+    int colorText;
 } Box;
 
 /*
@@ -188,5 +189,7 @@ extern TaskHandle_t drawHdl, receiveHdl;
 #define BYTE_RESET                0xFF
 #define SIZE_VALUES_TO_SEND       12
 extern GameState lastGameStateOtherPlayer;
+extern char str[100];
+extern font_t font1;
 
 #endif

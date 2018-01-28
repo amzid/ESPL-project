@@ -9,7 +9,6 @@
  */
 void drawTask(Game* game)
 {
-    font1 = gdispOpenFont("DejaVuSans24*");
 
 	Road* road = game->road[game->chosenMap];
     Vehicle* ego = game->ego;
@@ -213,7 +212,7 @@ void drawTask(Game* game)
 
 
             drawMap(road, ego, bot, map);
-            //drawInfo(ego,road,fps);
+            drawInfo(ego,road,fps);
 
             // Wait for display to stop writing
             xSemaphoreTake(ESPL_DisplayReady, portMAX_DELAY);
@@ -505,7 +504,7 @@ void drawBot(Vehicle* bot, Vehicle*  ego, Border* border, Road* road){
     if(fabs(distanceBotToEgo) <= displaySizeY/2 ){
         bot->rel.y = displaySizeY/2 - distanceBotToEgo;
 
-        if(bot->rel.y <= displaySizeY && bot->rel.y>=-VEHICLE_SIZE_Y) {
+        if(bot->rel.y <= displaySizeY) {
             if (bot->color == GREEN) {
                 drawVehicle(bot->rel.x + calcX(border, bot->rel.y, road->side), bot->rel.y, Green);
             } else if (bot->color == YELLOW) {
@@ -814,7 +813,7 @@ double calcX(Border* border, int y, double side)
 void drawMap(Road* road, Vehicle* ego, Vehicle* bot[NUM_BOTS], Map* map)
 {
 	//Draw map place holder
-	gdispFillArea(displaySizeX - MAP_SIZE_X, displaySizeY - MAP_SIZE_Y,MAP_SIZE_X, MAP_SIZE_Y, White);
+	gdispFillArea(displaySizeX - MAP_SIZE_X, displaySizeY - MAP_SIZE_Y,MAP_SIZE_X, MAP_SIZE_Y, HTML2COLOR(0x80FFFFFF));
 	gdispDrawBox(displaySizeX - MAP_SIZE_X, displaySizeY - MAP_SIZE_Y,MAP_SIZE_X, MAP_SIZE_Y, Black);
 
 	//draw map

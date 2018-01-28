@@ -5,10 +5,6 @@
 
 
 void controlGameState(Game* game) {
-    char str[100];
-    font_t font1;
-    font1 = gdispOpenFont("DejaVuSans24*");
-
     Button okButton, exitButton, resetButton, pauseButton;
     okButton.lastState = GPIO_ReadInputDataBit(OK_BUTTON_REGISTER, OK_BUTTON_PIN);
     exitButton.lastState = GPIO_ReadInputDataBit(EXIT_BUTTON_REGISTER, EXIT_BUTTON_PIN);
@@ -79,6 +75,7 @@ void controlGameState(Game* game) {
                     break;
                 }
                 if(resetButton.currentState == BUTTON_PRESSED && resetButton.lastState == BUTTON_UNPRESSED) {
+                    vTaskSuspend(receiveHdl);
                     initializeVehicle(game->ego);
                     initializeVehicle(game->bot1);
                     initializeVehicle(game->bot2);
@@ -88,12 +85,13 @@ void controlGameState(Game* game) {
                     valuesToSend[1] = BYTE_RESET;
                     sendviaUart(valuesToSend, SIZE_VALUES_TO_SEND);
                     time_s = 0;
-                    xTaskNotifyGive(receiveHdl);
+                    xTaskNotifyGive(drawHdl);
                     xTimerStart(xTimer, 0);
                     game->taktGame = 0;
                     game->taktUART = 0;
                     game->firstTime = 1;
-                    vTaskDelay(100);
+                    //vTaskDelay(20);
+                    vTaskResume(receiveHdl);
                     break;
                 }
                 if(pauseButton.currentState == BUTTON_PRESSED && pauseButton.lastState == BUTTON_UNPRESSED) {
@@ -181,5 +179,7 @@ void controlGameState(Game* game) {
         resetButton.lastState = resetButton.currentState;
         pauseButton.lastState = pauseButton.currentState;
         lastGameStateOtherPlayer = game->gameStateOtherPlayer;
+
+        vTaskDelay(500);
     }
 }

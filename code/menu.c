@@ -4,15 +4,12 @@
 #include "multiplayer.h"
 
 void startMenu(Game* game){
-    Box single_mode = {displaySizeX/8,displaySizeY/3,BOX_SIZE_X,BOX_SIZE_Y,"Single Player Mode",Cyan},
-        multi_mode  = {displaySizeX*5/8,displaySizeY/3,BOX_SIZE_X,BOX_SIZE_Y,"Multiplayer Mode",Cyan};
-    Box speed_ctrl = {displaySizeX/8,displaySizeY/2,BOX_SIZE_X,BOX_SIZE_Y,"Control speed",Cyan},
-        steering_ctrl  = {displaySizeX*5/8,displaySizeY/2,BOX_SIZE_X,BOX_SIZE_Y,"Control steering",Cyan};
+    Box single_mode = {displaySizeX/8,displaySizeY/3+5,BOX_SIZE_X,BOX_SIZE_Y,"Single Player Mode",COLOUR_BUTTON_UNCHOSEN,TEXT_COLOUR_BUTTON_UNCHOSEN},
+        multi_mode  = {displaySizeX*5/8,displaySizeY/3+5,BOX_SIZE_X,BOX_SIZE_Y,"Multiplayer Mode",COLOUR_BUTTON_UNCHOSEN,TEXT_COLOUR_BUTTON_UNCHOSEN};
+    Box speed_ctrl = {displaySizeX/8,displaySizeY/2+5,BOX_SIZE_X,BOX_SIZE_Y,"Control speed",COLOUR_BUTTON_UNCHOSEN,TEXT_COLOUR_BUTTON_UNCHOSEN},
+        steering_ctrl  = {displaySizeX*5/8,displaySizeY/2+5,BOX_SIZE_X,BOX_SIZE_Y,"Control steering",COLOUR_BUTTON_UNCHOSEN,TEXT_COLOUR_BUTTON_UNCHOSEN};
     for(int i=0; i<NUM_MAPS;i++)
         game->map[i]->color = White;
-    char str[100];
-    font_t font1;
-    font1 = gdispOpenFont("DejaVuSans24*");
     volatile ConnectionState lastConnectionState = NOT_CONNECTED;
     uint8_t valuesToSend[15];
     for(int i=0; i<15; i++)
@@ -22,33 +19,22 @@ void startMenu(Game* game){
             //clear display
             gdispClear(White);
 
-            sprintf(str, "Uart: %d", (int) game->taktUART);
-            gdispDrawString(0, 11, str, font1, Black);
-
-            sprintf(str, "Game: %d ", (int) game->taktGame);
-            gdispDrawString(0, 22, str, font1, Black);
-
+            drawTitel();
 
             if(lastConnectionState == NOT_CONNECTED && game->connectionState == CONNECTED)
             {
-                multi_mode.color = Cyan;
+                multi_mode.color = COLOUR_BUTTON_UNCHOSEN;
+                multi_mode.colorText = TEXT_COLOUR_BUTTON_UNCHOSEN;
             }
             else if(lastConnectionState == CONNECTED && game->connectionState == NOT_CONNECTED){
-                single_mode.color = Lime;
-                multi_mode.color = Gray;
+                single_mode.color = COLOUR_BUTTON_CHOSEN;
+                single_mode.colorText = TEXT_COLOUR_BUTTON_CHOSEN;
+                multi_mode.color = COLOUR_BUTTON_MP_OFF;
+                multi_mode.colorText = TEXT_COLOUR_BUTTON_MP_OFF;
                 game->mode = SINGLE_MODE;
                 game->menuState = NOT_CHOSEN;
             }
             lastConnectionState = game->connectionState;
-
-          //  sprintf(str,"Other mode: %d",game->received_input);//gdispDrawString(80, 11, str, font1, Black);
-
-            //sprintf(str,"Chosen: %d",game->menuState);
-            //gdispDrawString(210, 11, str, font1, Black);
-
-            sprintf(str,"Game mode: %d Map: %d Menu State %d Rec %d",game->mode, game->chosenMap, game->menuState,  game->received_buffer);
-            gdispDrawString(0, 11, str, font1, Black);
-
 
             adjustColors(game,&speed_ctrl, &steering_ctrl);
             if(game->menuState == NOT_CHOSEN)
@@ -80,23 +66,33 @@ void startMenu(Game* game){
                 drawBox(&steering_ctrl);
             }
 
-
-
             // Wait for display to stop writing
             xSemaphoreTake(ESPL_DisplayReady, portMAX_DELAY);
             // swap buffers
             ESPL_DrawLayer();
         }
         else{
-            vTaskDelay(20);
+            vTaskDelay(1000);
         }
     }
+}
+
+void drawTitel(){
+    for(int i=0; i<16; i++) {
+        gdispDrawThickLine(20 * i, 5, 20 * i + 10, 5, Black, 10, 0);
+        gdispDrawThickLine(20 * i+10, 15, 20 * i + 20, 15, Black, 10, 0);
+        gdispDrawThickLine(20 * i, 60, 20 * i + 10, 60, Black, 10, 0);
+        gdispDrawThickLine(20 * i+10, 70, 20 * i + 20, 70, Black, 10, 0);
+    }
+    font1 = gdispOpenFont("UI1 Double");
+    sprintf(str,"F1 Game");
+    gdispDrawStringBox(displaySizeX/2-60,25,120,30,str,font1,Black,justifyCenter);
 }
 
 void adjustColors(Game* game, Box* speed_ctrl, Box* steering_ctrl) {
 
     if(game->menuState >= MODE_CHOSEN) {
-        game->map[game->chosenMap]->color = Lime;
+        game->map[game->chosenMap]->color = COLOUR_BUTTON_CHOSEN;
         for (int i = 0; i < NUM_MAPS; i++) {
             if (i != game->chosenMap)
                 game->map[i]->color = White;
@@ -105,12 +101,14 @@ void adjustColors(Game* game, Box* speed_ctrl, Box* steering_ctrl) {
 
     if(game->menuState >= COURSE_CHOSEN) {
         if (game->controlState == STEERING_CTRL) {
-            speed_ctrl->color = Cyan;
-            steering_ctrl->color = Lime;
+            speed_ctrl->color = COLOUR_BUTTON_UNCHOSEN;
+            steering_ctrl->color = COLOUR_BUTTON_CHOSEN;
+            steering_ctrl->colorText = TEXT_COLOUR_BUTTON_CHOSEN;
         }
         else if (game->controlState == SPEED_CTRL){
-            steering_ctrl->color = Cyan;
-            speed_ctrl->color = Lime;
+            steering_ctrl->color = COLOUR_BUTTON_UNCHOSEN;
+            speed_ctrl->color = COLOUR_BUTTON_CHOSEN;
+            speed_ctrl->colorText = TEXT_COLOUR_BUTTON_CHOSEN;
         }
     }
 
@@ -137,8 +135,34 @@ void joystickToCourseChoice(Game* game)
 
 void drawMapInMenu(Map* map, uint16_t x, uint16_t y){
     //draw map
+    static int posInMap = 0;
     gdispFillConvexPoly(x+60,y+15, map, MAP_POINTS,map->color);
     gdispDrawPoly(x+60,y+15, map, MAP_POINTS, Black);
+    if(map->color == COLOUR_BUTTON_CHOSEN){
+        point middlePoint = {(map->point[posInMap/4].x + map->point[(posInMap/4+1)%MAP_POINTS].x) / 2,(map->point[posInMap/4].y + map->point[(posInMap/4+1)%MAP_POINTS].y) / 2};
+        point pointToDraw;
+        switch (posInMap%4){
+            case 0:
+                pointToDraw = map->point[posInMap/4];
+                break;
+            case 1:
+                pointToDraw.x = (map->point[posInMap/4].x + middlePoint.x)/2;
+                pointToDraw.y = (map->point[posInMap/4].y + middlePoint.y)/2;
+                break;
+            case 2:
+                pointToDraw = middlePoint;
+                break;
+            case 3:
+                pointToDraw.x = (map->point[posInMap/4+1].x + middlePoint.x)/2;
+                pointToDraw.y = (map->point[posInMap/4+1].y + middlePoint.y)/2;
+                break;
+        }
+        gdispFillCircle(pointToDraw.x+x+60, pointToDraw.y+y+15, 2, Red);
+        posInMap++;
+        vTaskDelay(10);
+        if(posInMap>=4*MAP_POINTS-1)
+            posInMap=0;
+    }
 }
 
 
@@ -148,18 +172,24 @@ void joystickToModeChoice(Box* single_mode, Box* multi_mode, Game* game){
     joystick_x = (uint8_t) (ADC_GetConversionValue(ESPL_ADC_Joystick_2) >> 4) - 255 / 2;
     if(game->connectionState == CONNECTED) {
         if (joystick_x > threshold) {
-            single_mode->color = Cyan;
-            multi_mode->color = Lime;
+            single_mode->color = COLOUR_BUTTON_UNCHOSEN;
+            single_mode->colorText = TEXT_COLOUR_BUTTON_UNCHOSEN;
+            multi_mode->color = COLOUR_BUTTON_CHOSEN;
+            multi_mode->colorText = TEXT_COLOUR_BUTTON_CHOSEN;
             game->mode = MULTIPLAYER_MODE;
         } else if (joystick_x < -threshold) {
-            single_mode->color = Lime;
-            multi_mode->color = Cyan;
+            single_mode->color = COLOUR_BUTTON_CHOSEN;
+            single_mode->colorText = TEXT_COLOUR_BUTTON_CHOSEN;
+            multi_mode->color = COLOUR_BUTTON_UNCHOSEN;
+            multi_mode->colorText = TEXT_COLOUR_BUTTON_UNCHOSEN;
             game->mode = SINGLE_MODE;
         }
     }
     else {
-        single_mode->color = Lime;
-        multi_mode->color = Gray;
+        single_mode->color = COLOUR_BUTTON_CHOSEN;
+        single_mode->colorText = TEXT_COLOUR_BUTTON_CHOSEN;
+        multi_mode->color = COLOUR_BUTTON_MP_OFF;
+        multi_mode->colorText = TEXT_COLOUR_BUTTON_MP_OFF;
         game->mode = SINGLE_MODE;
     }
 
@@ -181,15 +211,9 @@ void joystickToCtrlChoice(Box* speed_ctrl, Box* steering_ctrl, Game* game){
 
 
 void drawBox(Box* box){
-    char str[100];
-    font_t font1;
-    font1 = gdispOpenFont("DejaVuSans24*");
+    font1 = gdispOpenFont("UI1");
 
     sprintf(str, box->text);
     gdispFillArea(box->x,box->y,box->sizeX,box->sizeY,box->color);
-    gdispDrawStringBox(box->x, box->y, box->sizeX, box->sizeY, str, font1, Black, justifyCenter);
-
-    // gdispFillArea(box->x,box->y,box->sizeX,box->sizeY,Cyan);
-
-    // gdispDrawString(box->x+box->sizeX/2-strlen(box->text)*2-8,box->y+box->sizeY/2-1,str,font1,Black);
+    gdispDrawStringBox(box->x, box->y, box->sizeX, box->sizeY, str, font1, box->colorText, justifyCenter);
 }

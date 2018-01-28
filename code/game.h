@@ -3,8 +3,6 @@
 
 #include "includes.h"
 
-extern char str[100];
-extern font_t font1;
 
 //Task
 void drawTask(Game* game);
