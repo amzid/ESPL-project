@@ -39,8 +39,16 @@ void drawTask(Game* game)
     uint8_t valuesToSend[15];
     uint8_t lastCurrentPoint = 0;
 
+    int firstTime = 1;
+
     while (TRUE) {
         if(game->gameState == GAME_PLAYING) {
+            if(firstTime) {
+                road = game->road[game->chosenMap];
+                map = game->map[game->chosenMap];
+                firstTime = 0;
+            }
+
             game->taktGame++;
 
             //clear display

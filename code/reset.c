@@ -49,7 +49,41 @@ void initializeRoad(Road* road, Vehicle* ego, int index) {
 
     switch (index){
         case 0:
+            road->point[1].rel.yaw = -45;
+            road->point[2].rel.yaw = 45;
+            road->point[3].rel.yaw = 45;
+            road->point[4].rel.yaw = -45;
+            road->point[5].rel.yaw = 45;
+            road->point[6].rel.yaw = 45;
+            road->point[7].rel.yaw = 45;
+            road->point[8].rel.yaw = 45;
+            road->point[9].rel.yaw = -45;
+            road->point[10].rel.yaw = 45;
+            road->point[11].rel.yaw = 45;
+            road->point[12].rel.yaw = -45;
+            road->point[13].rel.yaw = 45;
+            road->point[14].rel.yaw = 45;
+            road->point[15].rel.yaw = 45;
+            road->point[ROAD_POINTS / 2].rel.yaw = 45;
+            break;
         case 1:
+            road->point[1].rel.yaw = 45;
+            road->point[2].rel.yaw = 0;
+            road->point[3].rel.yaw = 45;
+            road->point[4].rel.yaw = 0;
+            road->point[5].rel.yaw = 45;
+            road->point[6].rel.yaw = 0;
+            road->point[7].rel.yaw = 45;
+            road->point[8].rel.yaw = 0;
+            road->point[9].rel.yaw = 45;
+            road->point[10].rel.yaw = 0;
+            road->point[11].rel.yaw = 45;
+            road->point[12].rel.yaw = 0;
+            road->point[13].rel.yaw = 45;
+            road->point[14].rel.yaw = 0;
+            road->point[15].rel.yaw = 45;
+            road->point[ROAD_POINTS / 2].rel.yaw = 0;
+            break;
         case 2:
             road->point[1].rel.yaw = 45;
             road->point[2].rel.yaw = -45;

@@ -71,7 +71,7 @@ void receiveInStartMenu(Game* game, uint8_t input, uint8_t* pos, char buffer[15]
                         if (game->menuState >= MODE_CHOSEN && game->mode == MULTIPLAYER_MODE) {
                             if (buffer[1] >= COURSE_CHOSEN) {
                                 game->menuState = COURSE_CHOSEN;
-                                game->chosenMap = (ChosenMap) buffer[3];
+                                game->chosenMap = (ChosenMap) buffer[4];
                             }
                             if (buffer[1] == CTRL_CHOSEN) {
                                 game->controlState = (buffer[5] + 1) % 2;
