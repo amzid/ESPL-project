@@ -14,11 +14,20 @@ void startMenu(Game* game){
     font_t font1;
     font1 = gdispOpenFont("DejaVuSans24*");
     volatile ConnectionState lastConnectionState = NOT_CONNECTED;
-    uint8_t valuesToSend[4];
+    uint8_t valuesToSend[15];
+    for(int i=0; i<15; i++)
+            valuesToSend[i]=0;
     while(TRUE){
         if(game->gameState == START_MENU) {
             //clear display
             gdispClear(White);
+
+            sprintf(str, "Uart: %d", (int) game->taktUART);
+            gdispDrawString(0, 11, str, font1, Black);
+
+            sprintf(str, "Game: %d ", (int) game->taktGame);
+            gdispDrawString(0, 22, str, font1, Black);
+
 
             if(lastConnectionState == NOT_CONNECTED && game->connectionState == CONNECTED)
             {
@@ -50,10 +59,11 @@ void startMenu(Game* game){
                 joystickToCtrlChoice(&speed_ctrl, &steering_ctrl, game);
 
             valuesToSend[0] = (uint8_t) (game->menuState);
-            valuesToSend[1] = (uint8_t) (game->mode);
-            valuesToSend[2] = (uint8_t) (game->chosenMap);
-            valuesToSend[3] = (uint8_t) (game->controlState);
-            sendviaUart(valuesToSend,4);
+            valuesToSend[1] = (uint8_t) (game->gameState);
+            valuesToSend[2] = (uint8_t) (game->mode);
+            valuesToSend[3] = (uint8_t) (game->chosenMap);
+            valuesToSend[4] = (uint8_t) (game->controlState);
+            sendviaUart(valuesToSend,12);
 
             drawBox(&single_mode);
             drawBox(&multi_mode);
