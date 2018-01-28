@@ -8,7 +8,7 @@ void initializeVehicle(Vehicle* vehicle)
     vehicle->a_y = 0;
     vehicle->v_x = 0;
     vehicle->v_y = 0;
-    vehicle->currentRoadPoint = ROAD_POINTS-2;
+    vehicle->currentRoadPoint = 0;
     vehicle->distanceFromCurrentRoadPoint = 0;
     vehicle->state = NO_COLLISION;
     switch(vehicle->color){

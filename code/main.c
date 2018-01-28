@@ -18,6 +18,9 @@
 QueueHandle_t ESPL_RxQueue; // Already defined in ESPL_Functions.h
 SemaphoreHandle_t ESPL_DisplayReady;
 
+char str[100];
+font_t font1;
+
 uint16_t time_s = 0;
 TaskHandle_t drawHdl = NULL, receiveHdl  = NULL;
 TimerHandle_t xTimer=0;

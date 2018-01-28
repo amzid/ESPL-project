@@ -88,8 +88,8 @@ typedef struct
 #define A_Y_MAX 				7
 #define MAX_JOYSTICK_ANGLE_X 	22
 
-#define VEHICLE_SIZE_X          10
-#define VEHICLE_SIZE_Y          20
+#define VEHICLE_SIZE_X          30
+#define VEHICLE_SIZE_Y          30
 
 typedef enum {NO_COLLISION, COLLISION_WITH_BORDER} StateVehicle;
 typedef enum {RED, GREEN, YELLOW, BLUE} Color;
