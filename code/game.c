@@ -91,9 +91,7 @@ void drawTask(Game* game)
             }
 
 
-
             // Ego
-
             switch(game->mode) {
                 case SINGLE_MODE:
                     ego->v_x = (joystickPositionX - 255 / 2) * V_X_MAX / MAX_JOYSTICK_X;
@@ -199,40 +197,16 @@ void drawTask(Game* game)
                updateRanking(ego, bot, road, rankedVehicles);
             checkCarCollision(rankedVehicles);
 
-            sprintf(str, "Uart: %d", (int) game->taktUART);
-            gdispDrawString(0, 11, str, font1, Black);
-
-            sprintf(str, "Game: %d ", (int) game->taktGame);
-            gdispDrawString(0, 22, str, font1, Black);
-
-            sprintf(str, "S.Oth.P:: %d", game->gameStateOtherPlayer);
-            gdispDrawString(0, 44, str, font1, Black);
-
-            sprintf(str, "Vx: %d.%d", (int)ego->v_x, (int) (100 * ego->v_x) % 100);
-            gdispDrawString(0, 55, str, font1, Black);
-
-
             // DRAW
             ego->changeCurrentPoint = (lastCurrentPoint != ego->currentRoadPoint);
             drawBorder(road, ego->currentRoadPoint, ego->changeCurrentPoint, ego, &border);
             lastCurrentPoint = ego->currentRoadPoint;
+            // Gras and road
+            drawGrassAndRoad(road,&border,ego);
+            //Draw vehicles
             for (int i = 0; i < NUM_BOTS; i++)
                 drawBot(bot[i], ego, &border, road);
             gdispFillArea(displaySizeX / 2, ego->rel.y, VEHICLE_SIZE_X, VEHICLE_SIZE_Y, Red);
-
-            sprintf(str, "Bot_CP: %d", (int)bot[0]->currentRoadPoint);
-            gdispDrawString(0, 77, str, font1, Black);
-            sprintf(str, "Bot_d: %d", (int)bot[0]->distanceFromCurrentRoadPoint);
-            gdispDrawString(0, 88, str, font1, Black);
-            sprintf(str, "Bot_x: %d", (int)bot[0]->rel.x);
-            gdispDrawString(0, 99, str, font1, Black);
-
-            sprintf(str, "ego current point: %d",ego->currentRoadPoint);
-            gdispDrawString(0, 101, str, font1, Black);
-            sprintf(str, "ego distance %d",ego->distanceFromCurrentRoadPoint);
-            gdispDrawString(0, 111, str, font1, Black);
-            sprintf(str, "mode %d",game->mode);
-            gdispDrawString(0, 133, str, font1, Black);
 
             //TODO: Manage end of game
             if (ego->currentRoadPoint == ROAD_POINTS - 1 && ego->distanceFromCurrentRoadPoint >= road->point[ROAD_POINTS-1].distanceToNextRoadPoint - 3 * UNIT_ROAD_DISTANCE) {
@@ -247,7 +221,7 @@ void drawTask(Game* game)
             }
 
             drawMap(road, ego, bot, map);
-            drawInfo(ego,road,fps);
+            //drawInfo(ego,road,fps);
 
             // Wait for display to stop writing
             xSemaphoreTake(ESPL_DisplayReady, portMAX_DELAY);
@@ -262,13 +236,6 @@ void drawTask(Game* game)
                 valuesToSend[0]++;
                 valuesToSend[1] = game->gameState;
                 sendviaUart(valuesToSend, SIZE_VALUES_TO_SEND);
-                /*
-
-sprintf(str, "Hallo %d",valuesToSend[0]);
-gdispDrawString(0, 144, str, font1, Black);
-sprintf(str, "mode %d",game->mode);
-gdispDrawString(0, 133, str, font1, Black);
- */
                 xTaskNotifyGive(receiveHdl);
                 xSemaphoreTake(ESPL_DisplayReady, portMAX_DELAY);
                 ESPL_DrawLayer();
@@ -277,6 +244,72 @@ gdispDrawString(0, 133, str, font1, Black);
                 vTaskDelay(20);
         }
 	}
+}
+
+void drawGrassAndRoad(Road* road, Border* border, Vehicle* ego){
+    point grasPoints[5];
+    grasPoints[0].x = 0;
+    grasPoints[0].y = 0;
+    grasPoints[1].x = road->side + border->sizeHigherBorder * tan(border->yaw_rad[HIGHER_BORDER]);
+    grasPoints[1].y = 0;
+    grasPoints[2].x = road->side;
+    grasPoints[2].y = border->sizeHigherBorder;
+    grasPoints[3].x = road->side - round((displaySizeY - border->sizeHigherBorder) * tan(border->yaw_rad[LOWER_BORDER]));;
+    grasPoints[3].y = displaySizeY;
+    grasPoints[4].x = 0;
+    grasPoints[4].y = displaySizeY;
+    gdispFillConvexPoly(0,0,grasPoints,5,HTML2COLOR(0x458B00));
+
+    point roadPoints[6];
+    roadPoints[0] = grasPoints[1];
+    roadPoints[0].x += SIZE_BORDER;
+    roadPoints[1] = grasPoints[2];
+    roadPoints[1].x += SIZE_BORDER;
+    roadPoints[2] = grasPoints[3];
+    roadPoints[2].x += SIZE_BORDER;
+
+    grasPoints[1].x += ROAD_SIZE + SIZE_BORDER;
+    grasPoints[2].x += ROAD_SIZE + SIZE_BORDER;
+    grasPoints[3].x += ROAD_SIZE + SIZE_BORDER;
+    grasPoints[4].x = displaySizeX;
+    grasPoints[0].x = displaySizeX;
+    gdispFillConvexPoly(0,0,grasPoints,5,HTML2COLOR(0x458B00));
+
+    roadPoints[3] = grasPoints[3];
+    roadPoints[3].x -= SIZE_BORDER;
+    roadPoints[4] = grasPoints[2];
+    roadPoints[4].x -= SIZE_BORDER;
+    roadPoints[5] = grasPoints[1];
+    roadPoints[5].x -= SIZE_BORDER;
+    gdispFillConvexPoly(0,0,roadPoints,6,HTML2COLOR(0xA2B5CD));
+
+    Box box[4];
+    box[0].y = ego->distanceFromCurrentRoadPoint % UNIT_ROAD_DISTANCE;
+    box[1].y = (displaySizeY/2 + ego->distanceFromCurrentRoadPoint) % UNIT_ROAD_DISTANCE;
+    box[2].y = displaySizeY/2 + (ego->distanceFromCurrentRoadPoint) % UNIT_ROAD_DISTANCE;
+    box[3].y = displaySizeY + (ego->distanceFromCurrentRoadPoint) % UNIT_ROAD_DISTANCE;
+    for(int i=0; i<4; i++) {
+        box[i].color = Black;
+        box[i].x = calcX(border, box[i].y, road->side) + 1;
+        box[i].sizeX = SIZE_BORDER - 1;
+        box[i].sizeY = displaySizeY / 4;
+        if (box[i].y <= border->sizeHigherBorder)
+            drawBoxGame(&box[i], border->yaw_rad[HIGHER_BORDER]);
+        else
+            drawBoxGame(&box[i], border->yaw_rad[LOWER_BORDER]);
+        box[i].x += ROAD_SIZE;
+        if (box[i].y <= border->sizeHigherBorder)
+            drawBoxGame(&box[i], border->yaw_rad[HIGHER_BORDER]);
+        else
+            drawBoxGame(&box[i], border->yaw_rad[LOWER_BORDER]);
+        box[i].x -= ROAD_SIZE/2;
+        box[i].color = White;
+        box[i].sizeX = 5;
+        if (box[i].y <= border->sizeHigherBorder)
+            drawBoxGame(&box[i], border->yaw_rad[HIGHER_BORDER]);
+        else
+            drawBoxGame(&box[i], border->yaw_rad[LOWER_BORDER]);
+    }
 }
 
 void drawInfo(Vehicle* ego,Road* road,int fps){
@@ -297,7 +330,6 @@ void drawInfo(Vehicle* ego,Road* road,int fps){
 
     sprintf(str, "fps %d", fps);
     gdispDrawString(0, 0, str, font1, Black);
-
 }
 
 void checkCarCollision(Vehicle* rankedVehicles[NUM_VEHICLES])
@@ -556,9 +588,6 @@ void drawBorder(Road* road, uint16_t indexCurrentPoint, uint8_t changeCurrentPoi
 		road->state = STRAIGHT_ROAD;
 	}
 
-    sprintf(str, "RS: %d", road->state);
-    gdispDrawString(0, 122, str, font1, Black);
-
 
     if(fabs(yaw_rad_screen+yaw_rad_joystick) < fabs(yaw_rad_screen))
         yaw_rad_screen += yaw_rad_joystick;
@@ -795,27 +824,21 @@ void drawVehiclePositionOnMap(Vehicle* vehicle, Map* map)
     colorIndex++;
 }
 
-/*
-void drawBlackBox(int x, int y, double yaw_rad) {
-	uint8_t outSizeX = 10, inSizeX = 10, outSizeY = displaySizeY / 2, inSizeY =
-			displaySizeY / 4;
 
+void drawBoxGame(Box* box, double yaw_rad) {
 	struct point corners[NB_CORNERS_BORDER];
-	corners[CORNER_D_L].x = x + 1;
-	corners[CORNER_D_L].y = y;
+	corners[CORNER_D_L].x = box->x;
+	corners[CORNER_D_L].y = box->y;
 
-	corners[CORNER_H_L].x = round(
-			corners[CORNER_D_L].x + displaySizeY / 4 * tan(yaw_rad));
-	corners[CORNER_H_L].y = y - displaySizeY / 4;
+	corners[CORNER_H_L].x = corners[CORNER_D_L].x + box->sizeY * sin(yaw_rad);
+	corners[CORNER_H_L].y = corners[CORNER_D_L].y - box->sizeY * cos(yaw_rad);
 
-	corners[CORNER_H_R].x = corners[CORNER_H_L].x + inSizeX;
-	corners[CORNER_H_R].y = corners[CORNER_H_L].y;
+	corners[CORNER_H_R].x = corners[CORNER_H_L].x + box->sizeX * cos(yaw_rad);
+	corners[CORNER_H_R].y = corners[CORNER_H_L].y + box->sizeX * sin(yaw_rad);
 
-	corners[CORNER_D_R].x = corners[CORNER_D_L].x + inSizeX;
-	corners[CORNER_D_R].y = corners[CORNER_D_L].y;
+	corners[CORNER_D_R].x = corners[CORNER_D_L].x + box->sizeX * cos(yaw_rad);
+	corners[CORNER_D_R].y = corners[CORNER_D_L].y + box->sizeX * sin(yaw_rad);
 
-	gdispGFillConvexPoly(GDISP, 0, 0, corners, NB_CORNERS_BORDER, Black);
-	gdispGFillConvexPoly(GDISP, ROAD_SIZE, 0, corners, NB_CORNERS_BORDER,
-			Black);
+	gdispGFillConvexPoly(GDISP, 0, 0, corners, NB_CORNERS_BORDER, box->color);
 }
-*/
+
