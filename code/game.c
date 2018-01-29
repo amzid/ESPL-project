@@ -189,6 +189,7 @@ void drawTask(Game* game)
                     break;
             }
 
+
             ego->rel.x = displaySizeX / 2 - calcX(&border, displaySizeY / 2, road->side);
             if(!b_endGame)
                updateRanking(ego, bot, road, rankedVehicles);
@@ -209,6 +210,16 @@ void drawTask(Game* game)
                 drawBot(bot[i], ego, &border, road);
             drawVehicle(displaySizeX/2, ego->rel.y, Red);
 
+            sprintf(str, "CP: %d",ego->currentRoadPoint);
+            gdispDrawString(0, 11, str, font1, Black);
+            sprintf(str, "d: %d",ego->distanceFromCurrentRoadPoint);
+            gdispDrawString(0, 22, str, font1, Black);
+            sprintf(str, "Game: %d",game->taktGame);
+            gdispDrawString(0, 33, str, font1, Black);
+            sprintf(str, "Uart: %d",game->taktUART);
+            gdispDrawString(0, 44, str, font1, Black);
+            sprintf(str, "S.Oth.P: %d",game->gameStateOtherPlayer);
+            gdispDrawString(0, 55, str, font1, Black);
 
 
             drawMap(road, ego, bot, map);

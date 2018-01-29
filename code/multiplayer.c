@@ -70,7 +70,8 @@ void receiveInStartMenu(Game* game, uint8_t input, uint8_t* pos, char buffer[15]
                     else {
                         if (game->menuState >= MODE_CHOSEN && game->mode == MULTIPLAYER_MODE) {
                             if (buffer[1] >= COURSE_CHOSEN) {
-                                game->menuState = COURSE_CHOSEN;
+                                if(game->menuState < COURSE_CHOSEN)
+                                    game->menuState = COURSE_CHOSEN;
                                 game->chosenMap = (ChosenMap) buffer[4];
                             }
                             if (buffer[1] == CTRL_CHOSEN) {
@@ -149,6 +150,18 @@ void receiveWhileGamePlaying(Game* game, uint8_t input, uint8_t* pos, char buffe
                             game->bot3->currentRoadPoint = buffer[10];
                             game->bot3->distanceFromCurrentRoadPoint = *((uint16_t *) (buffer + 11));
                         }
+                    }
+                    else if(game->gameState == GAME_PLAYING && game->gameStateOtherPlayer == BYTE_RESET){
+                        initializeVehicle(game->ego);
+                        initializeVehicle(game->bot1);
+                        initializeVehicle(game->bot2);
+                        initializeVehicle(game->bot3);
+                        initializeRoad(game->road[game->chosenMap],game->ego,game->chosenMap);
+                        game->firstTime = 1;
+                        game->taktGame = 0;
+                        game->taktUART = 0;
+                        time_s = 0;
+                        xTimerStart(xTimer, 0);
                     }
                     xTaskNotifyGive(drawHdl);
                 }
