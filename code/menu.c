@@ -11,8 +11,8 @@ void startMenu(Game* game){
     for(int i=0; i<NUM_MAPS;i++)
         game->map[i]->color = White;
     volatile ConnectionState lastConnectionState = NOT_CONNECTED;
-    uint8_t valuesToSend[15];
-    for(int i=0; i<15; i++)
+    uint8_t valuesToSend[12];
+    for(int i=0; i<12; i++)
             valuesToSend[i]=0;
     while(TRUE){
         if(game->gameState == START_MENU) {
@@ -43,7 +43,8 @@ void startMenu(Game* game){
                 joystickToCourseChoice(game);
             if(game->menuState == COURSE_CHOSEN)
                 joystickToCtrlChoice(&speed_ctrl, &steering_ctrl, game);
-
+            for(int i=0; i<12; i++)
+                valuesToSend[i]=0;
             valuesToSend[0] = (uint8_t) (game->menuState);
             valuesToSend[1] = (uint8_t) (game->gameState);
             valuesToSend[2] = (uint8_t) (game->mode);

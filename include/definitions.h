@@ -12,7 +12,7 @@ static const uint16_t displaySizeX = 320,
 /*
  * FreeRTOS definitions
  */
-#define STACK_SIZE 800
+#define STACK_SIZE 1200
 
 /*
  * Road definitions
@@ -120,7 +120,7 @@ typedef struct
  * Game struct and game control
  */
 typedef enum {SINGLE_MODE, MULTIPLAYER_MODE} Mode;
-typedef enum {START_MENU, GAME_PLAYING, GAME_PAUSED} GameState;
+typedef enum {START_MENU, GAME_PLAYING, GAME_PAUSED, START_GAME} GameState;
 typedef enum {NOT_CONNECTED, CONNECTED} ConnectionState;
 typedef enum { NOT_CHOSEN, MODE_CHOSEN, COURSE_CHOSEN, CTRL_CHOSEN } MenuState;
 typedef enum { SPEED_CTRL, STEERING_CTRL } ControlState;
@@ -148,7 +148,8 @@ typedef struct
     uint32_t taktGame;
     uint8_t elapsed_s;
     uint16_t elapsed_ms;
-    uint8_t firstTime;
+    uint8_t firstTimeEndGame;
+    uint8_t firstTimeStartGame;
 } Game;
 
 #define INITIAL_HIGH_SCORE 10000

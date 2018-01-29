@@ -54,13 +54,13 @@ int main()
     for(int i=0; i<3; i++)
 	    fillMap(&road[i],&map[i]);
 
-    Game game = {NOT_CONNECTED, START_MENU, SINGLE_MODE, NOT_CHOSEN, SPEED_CTRL, INDEX_MAP_2, {&road[0],&road[1],&road[2]}, &ego, &bot[0], &bot[1], &bot[2], {&map[0],&map[1],&map[2]}, START_MENU, 233, 0, 0, 0,0,1};
+    Game game = {NOT_CONNECTED, START_MENU, SINGLE_MODE, NOT_CHOSEN, SPEED_CTRL, INDEX_MAP_2, {&road[0],&road[1],&road[2]}, &ego, &bot[0], &bot[1], &bot[2], {&map[0],&map[1],&map[2]}, START_MENU, 233, 0, 0, 0,0,1,1};
 
 	// Initializes Tasks with their respective priority
     xTaskCreate(controlGameState, "controlGameState", STACK_SIZE, &game, 8, NULL);
     xTaskCreate(drawTask, "drawTask", STACK_SIZE, &game, 7, &drawHdl);
     xTaskCreate(startMenu, "startMenu", STACK_SIZE, &game, 4, NULL);
-    xTaskCreate(uartReceive, "startMenu", STACK_SIZE, &game, 5, &receiveHdl);
+    xTaskCreate(uartReceive, "startMenu", STACK_SIZE, &game, 6, &receiveHdl);
     xTimer = xTimerCreate("Timer", configTICK_RATE_HZ/100, pdTRUE, ( void * ) 0, vTimerCallback); // every second a callback
 
 

@@ -43,8 +43,7 @@ void controlGameState(Game* game) {
                         if(okButton.currentState == BUTTON_PRESSED && okButton.lastState == BUTTON_UNPRESSED) {
                             game->menuState = COURSE_CHOSEN;
                             if (game->mode == SINGLE_MODE) {
-                                game->gameState = GAME_PLAYING;
-                                xTimerStart(xTimer, 0);
+                                game->gameState = START_GAME;
                             }
                             vTaskDelay(1000);
                         }
@@ -64,46 +63,24 @@ void controlGameState(Game* game) {
                     game->menuState = NOT_CHOSEN;
                     game->controlState = SPEED_CTRL;
                     game->mode = SINGLE_MODE;
-
-                    initializeVehicle(game->ego);
-                    initializeVehicle(game->bot1);
-                    initializeVehicle(game->bot2);
-                    initializeVehicle(game->bot3);
-                    initializeRoad(game->road[game->chosenMap],game->ego,game->chosenMap);
-                    game->firstTime = 1;
-                    game->taktGame = 0;
-                    game->taktUART = 0;
                     time_s = 0;
                     break;
                 }
                 if(resetButton.currentState == BUTTON_PRESSED && resetButton.lastState == BUTTON_UNPRESSED) {
-                        vTaskSuspend(receiveHdl);
-                        vTaskSuspend(drawHdl);
-                        initializeVehicle(game->ego);
-                        initializeVehicle(game->bot1);
-                        initializeVehicle(game->bot2);
-                        initializeVehicle(game->bot3);
-                        initializeRoad(game->road[game->chosenMap], game->ego, game->chosenMap);
-                        valuesToSend[1] = BYTE_RESET;
-                        sendviaUart(valuesToSend, SIZE_VALUES_TO_SEND);
-                        time_s = 0;
+                    if(time_s>=120){
+                        game->gameState = START_GAME;
                         //xTaskNotifyGive(drawHdl);
-                        xTimerStart(xTimer, 0);
-                        game->taktGame = 0;
-                        game->taktUART = 0;
-                        game->firstTime = 1;
-                        vTaskDelay(500);
-                    vTaskResume(receiveHdl);
-                    vTaskResume(drawHdl);
+                        time_s = 0;
+                        vTaskDelay(2000);
+                    }
                     break;
                 }
                 if(pauseButton.currentState == BUTTON_PRESSED && pauseButton.lastState == BUTTON_UNPRESSED) {
                     game->gameState = GAME_PAUSED;
-                    valuesToSend[0] = 32;
                     valuesToSend[1] = GAME_PAUSED;
                     sendviaUart(valuesToSend, SIZE_VALUES_TO_SEND);
                     xTimerStop(xTimer, 0);
-                    xTaskNotifyGive(drawHdl);
+                    //xTaskNotifyGive(drawHdl);
                     vTaskDelay(2000);
                     break;
                 }
@@ -115,32 +92,22 @@ void controlGameState(Game* game) {
 
                     case GAME_PAUSED:
                             game->gameState = GAME_PAUSED;
-                            xTaskNotifyGive(drawHdl);
+                            xTimerStop(xTimer, 0);
+                            //xTaskNotifyGive(drawHdl);
                         break;
-                        /*
-                    case BYTE_RESET:
-                        initializeVehicle(game->ego);
-                        initializeVehicle(game->bot1);
-                        initializeVehicle(game->bot2);
-                        initializeVehicle(game->bot3);
-                        initializeRoad(game->road[game->chosenMap],game->ego,game->chosenMap);
-                        game->firstTime = 1;
-                        game->taktGame = 0;
-                        game->taktUART = 0;
-                        time_s = 0;
-                        //xTaskNotifyGive(drawHdl);
-                        xTimerStart(xTimer, 0);
-                        break;
-                         */
+                    case START_GAME:
+                        if(lastGameStateOtherPlayer == START_MENU || lastGameStateOtherPlayer == GAME_PLAYING){
+                            time_s = 0;
+                            game->gameState = START_GAME;
+                        }
                 }
                 break;
 
             case GAME_PAUSED:
                 if(pauseButton.currentState == BUTTON_PRESSED && pauseButton.lastState == BUTTON_UNPRESSED) {
                     game->gameState = GAME_PLAYING;
-                    xTaskNotifyGive(drawHdl);
+                    //xTaskNotifyGive(drawHdl);
                     xTimerStart(xTimer, 0);
-                    lastGameStateOtherPlayer = game->gameStateOtherPlayer;
                     vTaskDelay(2000);
                     break;
                 }
@@ -149,15 +116,6 @@ void controlGameState(Game* game) {
                     game->menuState = NOT_CHOSEN;
                     game->controlState = SPEED_CTRL;
                     game->mode = SINGLE_MODE;
-
-                    initializeVehicle(game->ego);
-                    initializeVehicle(game->bot1);
-                    initializeVehicle(game->bot2);
-                    initializeVehicle(game->bot3);
-                    initializeRoad(game->road[game->chosenMap],game->ego,game->chosenMap);
-                    game->firstTime = 1;
-                    game->taktGame = 0;
-                    game->taktUART = 0;
                     time_s = 0;
                     break;
                 }
@@ -170,7 +128,8 @@ void controlGameState(Game* game) {
                         if(lastGameStateOtherPlayer==GAME_PAUSED)
                         {
                             game->gameState = GAME_PLAYING;
-                            xTaskNotifyGive(drawHdl);
+                            xTimerStart(xTimer, 0);
+                            //xTaskNotifyGive(drawHdl);
                         }
                         break;
                 }

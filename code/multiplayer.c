@@ -31,6 +31,7 @@ void uartReceive(Game* game) {
                 break;
             case GAME_PLAYING:
             case GAME_PAUSED:
+            case START_GAME:
                 receiveWhileGamePlaying(game, input, &pos, buffer);
                 break;
         }
@@ -87,7 +88,7 @@ void receiveInStartMenu(Game* game, uint8_t input, uint8_t* pos, char buffer[15]
                                     sendviaUart(valuesToSend, 12);
                                     vTaskDelay(20);
                                 }
-                                game->gameState = GAME_PLAYING;
+                                game->gameState = START_GAME;
                                 xTaskNotifyGive(drawHdl);
                                 vTaskDelay(5);
                             }
@@ -151,17 +152,8 @@ void receiveWhileGamePlaying(Game* game, uint8_t input, uint8_t* pos, char buffe
                             game->bot3->distanceFromCurrentRoadPoint = *((uint16_t *) (buffer + 11));
                         }
                     }
-                    else if(game->gameState == GAME_PLAYING && game->gameStateOtherPlayer == BYTE_RESET){
-                        initializeVehicle(game->ego);
-                        initializeVehicle(game->bot1);
-                        initializeVehicle(game->bot2);
-                        initializeVehicle(game->bot3);
-                        initializeRoad(game->road[game->chosenMap],game->ego,game->chosenMap);
-                        game->firstTime = 1;
-                        game->taktGame = 0;
-                        game->taktUART = 0;
-                        time_s = 0;
-                        xTimerStart(xTimer, 0);
+                    else if(game->gameStateOtherPlayer == START_GAME) {
+                            game->controlState = (buffer[5] + 1) % 2;
                     }
                     xTaskNotifyGive(drawHdl);
                 }
