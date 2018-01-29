@@ -15,24 +15,28 @@ void initializeVehicle(Vehicle* vehicle)
         case RED:
             vehicle->rel.y = displaySizeY / 2;
             vehicle->rel.x = displaySizeX / 2;
+            vehicle->distanceFromCurrentRoadPoint = 30;
             break;
         case GREEN:
             vehicle->a_y_0 = 1;
-            vehicle->v_y_max_straight_road = 15;
-            vehicle->absEffect = 0.3;
-            vehicle->rel.x = 20;
+            vehicle->v_y_max_straight_road = 13;
+            vehicle->absEffect = 1.5;
+            vehicle->rel.x = 10;
+            vehicle->distanceFromCurrentRoadPoint = 90;
             break;
         case YELLOW:
             vehicle->a_y_0 = 1.2;
-            vehicle->v_y_max_straight_road = 14;
-            vehicle->absEffect = 0.4;
+            vehicle->v_y_max_straight_road = 12;
+            vehicle->absEffect = 1.2;
             vehicle->rel.x = 50;
+            vehicle->distanceFromCurrentRoadPoint = 60;
             break;
         case BLUE:
             vehicle->a_y_0 = 1.4;
-            vehicle->v_y_max_straight_road = 13;
-            vehicle->absEffect = 0.3;
-            vehicle->rel.x = 130;
+            vehicle->v_y_max_straight_road = 12;
+            vehicle->absEffect = 1.5;
+            vehicle->rel.x = 115;
+            vehicle->distanceFromCurrentRoadPoint = 0;
             break;
     }
 }

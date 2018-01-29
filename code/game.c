@@ -81,10 +81,7 @@ void drawTask(Game* game)
                 joystickPositionX = 255 / 2;
                 joystickPositionY = 255 / 2;
                 ego->a_y = 0;
-                if (ego->v_y > 0)
-                    ego->v_y--;
-                else
-                    ego->v_y = 0;
+                ego->v_y = 0;
             }
 
 
@@ -100,18 +97,16 @@ void drawTask(Game* game)
                     calculateBotAcceleration(rankedVehicles, road);
                     calculateLateralSpeed(rankedVehicles, road, &border);
                     for (int i = 0; i < NUM_BOTS; i++) {
-                        uint8_t b_endGameBot = bot[i]->currentRoadPoint == ROAD_POINTS - 1 &&
+                        uint8_t b_endGameBot = (bot[i]->currentRoadPoint == ROAD_POINTS - 1 &&
                                                bot[i]->distanceFromCurrentRoadPoint >=
                                                road->point[ROAD_POINTS - 1].distanceToNextRoadPoint -
-                                               2 * UNIT_ROAD_DISTANCE;
+                                               2 * UNIT_ROAD_DISTANCE) || (bot[i]->currentRoadPoint > ROAD_POINTS - 1);
                         if (!b_endGameBot)
                             calculateVehicleSpeed(bot[i], 50);
                         else {
                             bot[i]->v_x = 0;
-                            if (bot[i]->v_y > 0)
-                                bot[i]->v_y--;
-                            else
-                                bot[i]->v_y = 0;
+                            bot[i]->v_y = 0;
+                            bot[i]->a_y = 0;
                         }
                         updatePosition(bot[i], road);
                         updateXPosition(bot[i], &border, road);
@@ -135,10 +130,8 @@ void drawTask(Game* game)
                                     calculateVehicleSpeed(bot[i], 50);
                                 else {
                                     bot[i]->v_x = 0;
-                                    if (bot[i]->v_y > 0)
-                                        bot[i]->v_y--;
-                                    else
-                                        bot[i]->v_y = 0;
+                                    bot[i]->v_y = 0;
+                                    bot[i]->a_y = 0;
                                 }
                                 updatePosition(bot[i], road);
                             }
@@ -209,9 +202,13 @@ void drawTask(Game* game)
             for (int i = 0; i < NUM_BOTS; i++)
                 drawBot(bot[i], ego, &border, road);
             drawVehicle(displaySizeX/2, ego->rel.y, Red);
-
-            sprintf(str, "CP: %d",ego->currentRoadPoint);
-            gdispDrawString(0, 11, str, font1, Black);
+            /*
+            for(int i=0; i<3; i++) {
+                sprintf(str, "Bot %d: %d", i, (int) round(bot[i]->v_y));
+                gdispDrawString(0, 22 * (i+2), str, font1, White);
+            }
+             */
+            /*
             sprintf(str, "d: %d",ego->distanceFromCurrentRoadPoint);
             gdispDrawString(0, 22, str, font1, Black);
             sprintf(str, "Game: %d",game->taktGame);
@@ -220,7 +217,7 @@ void drawTask(Game* game)
             gdispDrawString(0, 44, str, font1, Black);
             sprintf(str, "S.Oth.P: %d",game->gameStateOtherPlayer);
             gdispDrawString(0, 55, str, font1, Black);
-
+*/
 
             drawMap(road, ego, bot, map);
             drawInfo(ego,road,fps);
@@ -233,14 +230,11 @@ void drawTask(Game* game)
         }
         else {
             if(game->gameState == GAME_PAUSED){
-                //gdispClear(White);
                 ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
                 valuesToSend[0]++;
                 valuesToSend[1] = game->gameState;
                 sendviaUart(valuesToSend, SIZE_VALUES_TO_SEND);
                 xTaskNotifyGive(receiveHdl);
-                xSemaphoreTake(ESPL_DisplayReady, portMAX_DELAY);
-                ESPL_DrawLayer();
             }
             else
                 vTaskDelay(20);
@@ -283,11 +277,11 @@ void drawFinishGameAndHighScores(Road* road, Vehicle* ego){
     }
     gdispDrawLine(road->side, displaySizeY / 2 - (road->point[ROAD_POINTS-1].distanceToNextRoadPoint - ego->distanceFromCurrentRoadPoint- 2 * UNIT_ROAD_DISTANCE),road->side + ROAD_SIZE ,displaySizeY / 2 - (road->point[ROAD_POINTS-1].distanceToNextRoadPoint - ego->distanceFromCurrentRoadPoint- 2 * UNIT_ROAD_DISTANCE), Black );
     sprintf(str, "High Scores:");
-    gdispDrawString(displaySizeX/2-8, 11, str, font1, Black);
+    gdispDrawString(displaySizeX/2-8, 11, str, font1, White);
     for(int i=0; i<3 && road->highScores[i] != INITIAL_HIGH_SCORE; i++)
     {
         sprintf(str, "%d) %d.%d%d",i+1,road->highScores[i]/100, (road->highScores[i]/10) % 10, road->highScores[i] % 10);
-        gdispDrawString(displaySizeX/2-8, 22+i*11, str, font1, Black);
+        gdispDrawString(displaySizeX/2-8, 22+i*11, str, font1, White);
     }
 }
 
@@ -359,86 +353,72 @@ void drawGrassAndRoad(Road* road, Border* border, Vehicle* ego){
 }
 
 void drawInfo(Vehicle* ego,Road* road,int fps){
-    char str[100];
-    font_t font1;
-    font1 = gdispOpenFont("DejaVuSans24*");
+    font1 = gdispOpenFont("UI2 Narrow");
+    sprintf(str, "%d.%d%d", time_s/100,(time_s/10) % 10, time_s % 10);
+    gdispDrawString(1, 15, str, font1, White);
 
-    //Draw map place holder
-    gdispFillArea(0, displaySizeY - MAP_SIZE_Y,MAP_SIZE_X, MAP_SIZE_Y, White);
-    gdispDrawBox(0, displaySizeY - MAP_SIZE_Y,MAP_SIZE_X, MAP_SIZE_Y, Black);
+    sprintf(str, "%d.%d", (int) ego->v_y, (int) (ego->v_y*10 - 10 * (int)ego->v_y));
+    gdispDrawString(1, displaySizeY - MAP_SIZE_Y +30, str, font1, White);
 
-    sprintf(str, "Elapsed time: %d.%d%d", time_s/100,(time_s/10) % 10, time_s % 10);
-    gdispDrawString(1, displaySizeY - MAP_SIZE_Y +10, str, font1, Black);
-    sprintf(str, "Speed: %d.%d", (int) ego->v_y, (int) (ego->v_y*10 - 10 * (int)ego->v_y));
-    gdispDrawString(1, displaySizeY - MAP_SIZE_Y +30, str, font1, Black);
     sprintf(str, "Rank: %d", ego->ranking+1);
-    gdispDrawString(1, displaySizeY - MAP_SIZE_Y +50, str, font1, Black);
+    gdispDrawString(1, displaySizeY - MAP_SIZE_Y +50, str, font1, White);
 
+    font1 = gdispOpenFont("DejaVuSans24");
     sprintf(str, "fps %d", fps);
-    gdispDrawString(0, 0, str, font1, Black);
+    gdispDrawString(0, 0, str, font1, White);
 }
 
 void checkCarCollision(Vehicle* rankedVehicles[NUM_VEHICLES])
 {
+
     for(int i=1; i<NUM_VEHICLES; i++) {
         for(int j=0; j<i; j++)
         {
             if(fabs(rankedVehicles[i]->rel.x - rankedVehicles[j]->rel.x) < VEHICLE_SIZE_X
                && fabs(rankedVehicles[i]->rel.y - rankedVehicles[j]->rel.y) < VEHICLE_SIZE_Y)
             {
-                rankedVehicles[j]->distanceFromCurrentRoadPoint += 4;
-                rankedVehicles[i]->distanceFromCurrentRoadPoint -= 4 * (rankedVehicles[i]->distanceFromCurrentRoadPoint - 4 >= 0);
+                if(rankedVehicles[i]->distanceFromCurrentRoadPoint - 4 >=0)
+                    rankedVehicles[i]->distanceFromCurrentRoadPoint -= 4;
+                else
+                    rankedVehicles[i]->distanceFromCurrentRoadPoint = 0;
+
+                rankedVehicles[j]->distanceFromCurrentRoadPoint += VEHICLE_SIZE_Y - fabs(rankedVehicles[i]->rel.y - rankedVehicles[j]->rel.y) +4;
+
+                rankedVehicles[j]->v_y += 0.1;
+                rankedVehicles[i]->v_y -= 0.1;
             }
         }
     }
 }
 
 void calculateLateralSpeed(Vehicle* rankedVehicles[NUM_VEHICLES], Road* road, Border* border){
-    char str[100];
-    font_t font1;
-    font1 = gdispOpenFont("DejaVuSans24*");
-
-    double side = 0, x_soll = 0;
+    double x_soll = 0;
     for(int i=0; i<NUM_VEHICLES; i++) {
         if(rankedVehicles[i]->color != RED) {
             Vehicle *bot = rankedVehicles[i];
-            side = calcX(border,bot->rel.y,road->side);
             if(bot->ranking == 0) {
                 x_soll = ROAD_SIZE / 2;
             }
             else{
-                //if(fabs(rankedVehicles[i]->rel.y - rankedVehicles[i-1]->rel.y) <= UNIT_ROAD_DISTANCE) {
                     if (rankedVehicles[i]->rel.x <= rankedVehicles[i - 1]->rel.x + VEHICLE_SIZE_X / 2) // überholen in the left direction of next vehicle
                     {
-                        x_soll = (rankedVehicles[i - 1]->rel.x + (SIZE_BORDER)) / 2;
+                        x_soll = (rankedVehicles[i - 1]->rel.x + (SIZE_BORDER)) / 2 - VEHICLE_SIZE_X/2;
                     } else {
-                        x_soll = (rankedVehicles[i - 1]->rel.x + VEHICLE_SIZE_X + (ROAD_SIZE)) / 2;
+                        x_soll = (rankedVehicles[i - 1]->rel.x + VEHICLE_SIZE_X + (ROAD_SIZE)) / 2 - VEHICLE_SIZE_X/2 -SIZE_BORDER;
                     }
-                //}
-//                else
-//                {
-//                    x_soll = rankedVehicles[i]->rel.x;
-//                }
             }
 
             rankedVehicles[i]->v_x = round(x_soll - rankedVehicles[i]->rel.x) / 50.0;
-            /*
-            if(rankedVehicles[i]->color == BLUE){
-                sprintf(str, "Xsoll: %d", (int)round(x_soll));
-                gdispDrawString(0, 144, str, font1, Black);
-                sprintf(str, "Vx: %d", (int)round(rankedVehicles[i]->v_x * 100));
-                gdispDrawString(0, 155, str, font1, Black);
-            }
-             */
         }
     }
 }
 
 void updateXPosition(Vehicle* bot, Border* border, Road* road){
-    if(bot->rel.x <= SIZE_BORDER)
+    if(bot->rel.x <= SIZE_BORDER || bot->rel.x + VEHICLE_SIZE_X > ROAD_SIZE)
     {
         bot->state = COLLISION_WITH_BORDER;
-        bot->v_y = 1;
+        if(bot->v_y > 2)
+            bot->v_y -= REDUCED_VEL_COL_BORDER;
     }
     else {
         bot->state = NO_COLLISION;
@@ -553,7 +533,7 @@ void calculateBotAcceleration(Vehicle* rankedVehicles[NUM_VEHICLES], Road* road)
                 bot->a_y = 0;
         }
         else {
-            double v_soll = road->point[bot->currentRoadPoint + 1].rel.yaw * 10.0 / 45;
+            double v_soll = road->point[bot->currentRoadPoint + 1].rel.yaw * 8.0 / 45;
             if (bot->v_y > v_soll)
                 bot->a_y = -bot->absEffect;
             else
@@ -571,11 +551,11 @@ void calculateVehicleSpeed(Vehicle* vehicle, int fps)
         if(fps != 0) {
             vehicle->v_y += vehicle->a_y / (double) fps;
         }
-		if(vehicle->v_y>=V_Y_MAX)
-			vehicle->v_y=V_Y_MAX;
-		else if(vehicle->v_y<=0)
-			vehicle->v_y=2;
+        if(vehicle->v_y<=0)
+            vehicle->v_y=2;
 	}
+    if(vehicle->v_y>=V_Y_MAX-15)
+        vehicle->v_y=V_Y_MAX-15;
 }
 
 
@@ -711,16 +691,16 @@ void drawBorder(Road* road, uint16_t indexCurrentPoint, uint8_t changeCurrentPoi
 			road->side = displaySizeX/2 - SIZE_BORDER - 3;
 			gdispFillArea(displaySizeX/2 - 3, ego->rel.y, 3, VEHICLE_SIZE_Y, Red);
 			ego->state = COLLISION_WITH_BORDER;
-			if(ego->v_y > 1)
-				ego->v_y --;
+			if(ego->v_y > 2)
+				ego->v_y -= REDUCED_VEL_COL_BORDER;
 		}
 		else if (road->side + ROAD_SIZE - displaySizeX/2 - VEHICLE_SIZE_X <= 0) // Collision with right side
 		{
 			road->side = displaySizeX/2 + VEHICLE_SIZE_X - ROAD_SIZE + 3;
 			gdispFillArea(displaySizeX/2 + VEHICLE_SIZE_X, ego->rel.y, 3, VEHICLE_SIZE_Y, Red);
 			ego->state = COLLISION_WITH_BORDER;
-			if(ego->v_y > 1)
-				ego->v_y --;
+            if(ego->v_y > 2)
+                ego->v_y -= REDUCED_VEL_COL_BORDER;
 		}
 		else
 		{
@@ -824,11 +804,17 @@ double calcX(Border* border, int y, double side)
 void drawMap(Road* road, Vehicle* ego, Vehicle* bot[NUM_BOTS], Map* map)
 {
 	//Draw map place holder
-	gdispFillArea(displaySizeX - MAP_SIZE_X, displaySizeY - MAP_SIZE_Y,MAP_SIZE_X, MAP_SIZE_Y, HTML2COLOR(0x80FFFFFF));
-	gdispDrawBox(displaySizeX - MAP_SIZE_X, displaySizeY - MAP_SIZE_Y,MAP_SIZE_X, MAP_SIZE_Y, Black);
+	//gdispFillArea(displaySizeX - MAP_SIZE_X, displaySizeY - MAP_SIZE_Y,MAP_SIZE_X, MAP_SIZE_Y, HTML2COLOR(0x80FFFFFF));
+	//gdispDrawBox(displaySizeX - MAP_SIZE_X, displaySizeY - MAP_SIZE_Y,MAP_SIZE_X, MAP_SIZE_Y, Black);
 
 	//draw map
-	gdispDrawPoly(displaySizeX - MAP_SIZE_X + 60, displaySizeY - MAP_SIZE_Y + 15, map, MAP_POINTS, Black);
+    for(int i=0; i<MAP_POINTS; i++)
+        gdispDrawThickLine(map->point[i].x+displaySizeX - MAP_SIZE_X + 60,
+                           map->point[i].y+displaySizeY - MAP_SIZE_Y + 15,
+                           map->point[(i+1)%MAP_POINTS].x+displaySizeX - MAP_SIZE_X + 60,
+                           map->point[(i+1)%MAP_POINTS].y+displaySizeY - MAP_SIZE_Y + 15,
+                           HTML2COLOR(0xff9f00),3,0);
+	//gdispDrawPoly(displaySizeX - MAP_SIZE_X + 60, displaySizeY - MAP_SIZE_Y + 15, map, MAP_POINTS, Black);
 
 	//Draw ego vehicle position
     drawVehiclePositionOnMap(ego, map);

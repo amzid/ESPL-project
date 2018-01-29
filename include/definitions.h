@@ -91,6 +91,8 @@ typedef struct
 #define VEHICLE_SIZE_X          30
 #define VEHICLE_SIZE_Y          30
 
+#define REDUCED_VEL_COL_BORDER  0.5
+
 typedef enum {NO_COLLISION, COLLISION_WITH_BORDER} StateVehicle;
 typedef enum {RED, GREEN, YELLOW, BLUE} Color;
 
