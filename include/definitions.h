@@ -93,7 +93,7 @@ typedef struct
 
 #define REDUCED_VEL_COL_BORDER  0.5
 
-typedef enum {NO_COLLISION, COLLISION_WITH_BORDER, END_GAME} StateVehicle;
+typedef enum {NO_COLLISION, COLLISION_WITH_BORDER, END_GAME, COLLISION_WITH_VEHICLE} StateVehicle;
 typedef enum {RED, GREEN, YELLOW, BLUE} Color;
 
 typedef struct

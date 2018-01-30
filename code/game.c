@@ -463,28 +463,47 @@ void drawInfo(Vehicle* ego,Road* road,int fps){
 
 void checkCarCollision(Vehicle* rankedVehicles[NUM_VEHICLES])
 {
-    uint8_t offset = 2;
+    uint8_t offsetY = 8, offsetX = 4;
     for(int i=1; i<NUM_VEHICLES; i++) {
         if(rankedVehicles[i]->state != END_GAME)
             for (int j = 0; j < i; j++) {
                 if(fabs(rankedVehicles[i]->currentRoadPoint % LAP_POINTS - rankedVehicles[j]->currentRoadPoint % LAP_POINTS) <= 1) {
                     if (fabs(rankedVehicles[i]->rel.x - rankedVehicles[j]->rel.x) < VEHICLE_SIZE_X
                         && fabs(rankedVehicles[i]->rel.y - rankedVehicles[j]->rel.y) < VEHICLE_SIZE_Y) {
-                        if (rankedVehicles[j]->color != RED)
-                            rankedVehicles[j]->distanceFromCurrentRoadPoint +=
-                                    VEHICLE_SIZE_Y - fabs(rankedVehicles[i]->rel.y - rankedVehicles[j]->rel.y) + offset;
+                        uint8_t diffX = rankedVehicles[j]->rel.x - rankedVehicles[i]->rel.x;
+                        if (rankedVehicles[j]->color != RED) {
+                            // MOve in y direction
+                            rankedVehicles[j]->distanceFromCurrentRoadPoint +=VEHICLE_SIZE_Y - fabs(rankedVehicles[i]->rel.y - rankedVehicles[j]->rel.y) + offsetY;
+                            // Move in x direction based on sign of diffX
+                            if(diffX>0)
+                                rankedVehicles[j]->rel.x += offsetX;
+                            else
+                                rankedVehicles[j]->rel.x -= offsetX;
+
+                             //(rankedVehicles[i]->rel.x - (rankedVehicles[j]->rel.x + VEHICLE_SIZE_X)) + offsetX;
+
+                            if(rankedVehicles[j]->rel.x < SIZE_BORDER)
+                                rankedVehicles[j]->rel.x = SIZE_BORDER;
+                            else if(rankedVehicles[j]->rel.x > ROAD_SIZE-VEHICLE_SIZE_X)
+                                rankedVehicles[j]->rel.x = ROAD_SIZE-VEHICLE_SIZE_X;
+                        }
                         else {
-                            if (rankedVehicles[i]->distanceFromCurrentRoadPoint -
-                                (VEHICLE_SIZE_Y - fabs(rankedVehicles[i]->rel.y - rankedVehicles[j]->rel.y) + offset) >=
-                                0)
-                                rankedVehicles[i]->distanceFromCurrentRoadPoint -=
-                                        VEHICLE_SIZE_Y - fabs(rankedVehicles[i]->rel.y - rankedVehicles[j]->rel.y) +
-                                        offset;
+                            // Move in x direction
+                            if(diffX<0)
+                                rankedVehicles[i]->rel.x += offsetX;
+                            else
+                                rankedVehicles[i]->rel.x -= offsetX;
+
+                            if(rankedVehicles[i]->rel.x < SIZE_BORDER)
+                                rankedVehicles[i]->rel.x = SIZE_BORDER;
+                            else if(rankedVehicles[i]->rel.x > ROAD_SIZE-VEHICLE_SIZE_X)
+                                rankedVehicles[i]->rel.x = ROAD_SIZE-VEHICLE_SIZE_X;
+                            // Move in y direction
+                            if (rankedVehicles[i]->distanceFromCurrentRoadPoint - (VEHICLE_SIZE_Y - fabs(rankedVehicles[i]->rel.y - rankedVehicles[j]->rel.y) + offsetY) >= 0)
+                                rankedVehicles[i]->distanceFromCurrentRoadPoint -= VEHICLE_SIZE_Y - fabs(rankedVehicles[i]->rel.y - rankedVehicles[j]->rel.y) + offsetY;
                             else
                                 rankedVehicles[i]->distanceFromCurrentRoadPoint = 0;
                         }
-                        rankedVehicles[j]->v_y += 0.1;
-                        rankedVehicles[i]->v_y -= 0.1;
                     }
                 }
             }
