@@ -41,6 +41,7 @@ void controlGameState(Game* game) {
                         if(okButton.currentState == BUTTON_PRESSED && okButton.lastState == BUTTON_UNPRESSED) {
                             game->menuState = COURSE_CHOSEN;
                             if (game->mode == SINGLE_MODE) {
+                                time_s = 0;
                                 game->gameState = START_GAME;
                             }
                             vTaskDelay(1000);
@@ -141,6 +142,7 @@ void exitGame(Game* game){
     game->gameState = START_MENU;
     game->menuState = NOT_CHOSEN;
     game->controlState = SPEED_CTRL;
-    game->mode = SINGLE_MODE;
+    game->mode = MULTIPLAYER_MODE;
+    game->modeOtherPlayer == MULTIPLAYER_MODE;
     time_s = 0;
 }

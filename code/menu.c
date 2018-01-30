@@ -3,6 +3,11 @@
 
 #include "multiplayer.h"
 
+
+/*
+ * @brief This task is used to draw and update all menu elements on display.
+ *
+ */
 void startMenu(Game* game){
     Box single_mode = {displaySizeX/8,displaySizeY/3+5,BOX_SIZE_X,BOX_SIZE_Y,"Single Player Mode",COLOUR_BUTTON_UNCHOSEN,TEXT_COLOUR_BUTTON_UNCHOSEN},
         multi_mode  = {displaySizeX*5/8,displaySizeY/3+5,BOX_SIZE_X,BOX_SIZE_Y,"Multiplayer Mode",COLOUR_BUTTON_UNCHOSEN,TEXT_COLOUR_BUTTON_UNCHOSEN};
@@ -11,6 +16,7 @@ void startMenu(Game* game){
     for(int i=0; i<NUM_MAPS;i++)
         game->map[i]->color = White;
     volatile ConnectionState lastConnectionState = NOT_CONNECTED;
+    volatile Mode lastModeOtherPlayer = MULTIPLAYER_MODE;
     uint8_t valuesToSend[12];
     for(int i=0; i<12; i++)
             valuesToSend[i]=0;
@@ -21,21 +27,25 @@ void startMenu(Game* game){
 
             drawTitel();
 
-            if(lastConnectionState == NOT_CONNECTED && game->connectionState == CONNECTED)
+            // When Connection is turned on
+            if((lastConnectionState == NOT_CONNECTED && game->connectionState == CONNECTED) || (lastModeOtherPlayer == SINGLE_MODE && game->modeOtherPlayer == MULTIPLAYER_MODE) )
             {
                 multi_mode.color = COLOUR_BUTTON_UNCHOSEN;
                 multi_mode.colorText = TEXT_COLOUR_BUTTON_UNCHOSEN;
             }
-            else if(game->connectionState == NOT_CONNECTED){
+            // When Connection is turned off
+            else if(game->connectionState == NOT_CONNECTED || game->modeOtherPlayer == SINGLE_MODE){
                 single_mode.color = COLOUR_BUTTON_CHOSEN;
                 single_mode.colorText = TEXT_COLOUR_BUTTON_CHOSEN;
                 multi_mode.color = COLOUR_BUTTON_MP_OFF;
                 multi_mode.colorText = TEXT_COLOUR_BUTTON_MP_OFF;
                 game->mode = SINGLE_MODE;
-                if(lastConnectionState == CONNECTED)
+                if((lastConnectionState == CONNECTED && game->connectionState == NOT_CONNECTED) || ((lastModeOtherPlayer == MULTIPLAYER_MODE && game->modeOtherPlayer == SINGLE_MODE)))
                     game->menuState = NOT_CHOSEN;
             }
+            // Store last states
             lastConnectionState = game->connectionState;
+            lastModeOtherPlayer = game->modeOtherPlayer;
 
             adjustColors(game,&speed_ctrl, &steering_ctrl);
             if(game->menuState == NOT_CHOSEN)
@@ -172,7 +182,7 @@ void joystickToModeChoice(Box* single_mode, Box* multi_mode, Game* game){
     int joystick_x = 0,
             threshold = 50;
     joystick_x = (uint8_t) (ADC_GetConversionValue(ESPL_ADC_Joystick_2) >> 4) - 255 / 2;
-    if(game->connectionState == CONNECTED) {
+    if(game->connectionState == CONNECTED && game->modeOtherPlayer == MULTIPLAYER_MODE) {
         if (joystick_x > threshold) {
             single_mode->color = COLOUR_BUTTON_UNCHOSEN;
             single_mode->colorText = TEXT_COLOUR_BUTTON_UNCHOSEN;
@@ -187,14 +197,6 @@ void joystickToModeChoice(Box* single_mode, Box* multi_mode, Game* game){
             game->mode = SINGLE_MODE;
         }
     }
-    else {
-        single_mode->color = COLOUR_BUTTON_CHOSEN;
-        single_mode->colorText = TEXT_COLOUR_BUTTON_CHOSEN;
-        multi_mode->color = COLOUR_BUTTON_MP_OFF;
-        multi_mode->colorText = TEXT_COLOUR_BUTTON_MP_OFF;
-        game->mode = SINGLE_MODE;
-    }
-
 }
 
 void joystickToCtrlChoice(Box* speed_ctrl, Box* steering_ctrl, Game* game){

@@ -281,6 +281,7 @@ void drawTask(Game* game) {
 
             if(time_s >= 300 || (time_s>=250 && game->gameStateOtherPlayer == GAME_PLAYING)){
                 game->gameState = GAME_PLAYING;
+                time_s = 0;
             }
 
             gdispClear(Black);

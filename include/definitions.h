@@ -150,6 +150,7 @@ typedef struct
     uint16_t elapsed_ms;
     uint8_t firstTimeEndGame;
     uint8_t firstTimeStartGame;
+    Mode modeOtherPlayer;
 } Game;
 
 #define INITIAL_HIGH_SCORE 10000

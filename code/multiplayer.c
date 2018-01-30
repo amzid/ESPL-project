@@ -65,10 +65,9 @@ void receiveInStartMenu(Game* game, uint8_t input, uint8_t* pos, char buffer[15]
             if (input == stopByte) {
                 game->received_buffer = (uint8_t) buffer[1];
                 game->gameStateOtherPlayer = (uint8_t) buffer[2];
-                if (buffer[1] >= MODE_CHOSEN) {
-                    if (buffer[3] == SINGLE_MODE)
-                        game->connectionState = NOT_CONNECTED;
-                    else {
+                if (game->gameStateOtherPlayer == START_MENU && buffer[1] >= MODE_CHOSEN) {
+                    game->modeOtherPlayer = buffer[3];
+                    if(game->modeOtherPlayer == MULTIPLAYER_MODE) {
                         if (game->menuState >= MODE_CHOSEN && game->mode == MULTIPLAYER_MODE) {
                             if (buffer[1] >= COURSE_CHOSEN) {
                                 if(game->menuState < COURSE_CHOSEN)
