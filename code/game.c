@@ -25,6 +25,7 @@ void drawTask(Game* game) {
     uint8_t joystickPositionX = 0,
             joystickPositionY = 0;
 
+
     TickType_t xLastWakeTime;
     xLastWakeTime = xTaskGetTickCount();
     const TickType_t tickFramerate = configTICK_RATE_HZ / 50;
@@ -39,8 +40,9 @@ void drawTask(Game* game) {
 
     while (TRUE) {
         if (game->gameState == GAME_PLAYING) {
-            tactDrawTask++;
+           tactDrawTask++;
             if (game->firstTimeStartGame && game->gameStateOtherPlayer==GAME_PLAYING) {
+              //tactDrawTask = xTaskGetTickCount();
                 road = game->road[game->chosenMap];
                 map = game->map[game->chosenMap];
                 game->firstTimeStartGame = 0;
@@ -56,6 +58,8 @@ void drawTask(Game* game) {
 
 
             game->taktGame++;
+
+
 
             //clear display
             gdispClear(White);
@@ -423,8 +427,8 @@ void drawGrassAndRoad(Road* road, Border* border, Vehicle* ego){
     box[3].y = displaySizeY + (ego->distanceFromCurrentRoadPoint) % UNIT_ROAD_DISTANCE;
     for(int i=0; i<4; i++) {
         box[i].color = Black;
-        box[i].x = calcX(border, box[i].y, road->side) + 1;
-        box[i].sizeX = SIZE_BORDER - 1;
+        box[i].x = calcX(border, box[i].y, road->side) ;
+        box[i].sizeX = SIZE_BORDER ;
         box[i].sizeY = displaySizeY / 4;
         if (box[i].y <= border->sizeHigherBorder)
             drawBoxGame(&box[i], border->yaw_rad[HIGHER_BORDER]);
@@ -672,9 +676,7 @@ void calculateVehicleSpeed(Vehicle* vehicle, int fps)
  */
 void drawBorder(Road* road, uint16_t indexCurrentPoint, uint8_t changeCurrentPoint, Vehicle* ego, Border* border)
 {
-    char str[100];
-    font_t font1;
-    font1 = gdispOpenFont("DejaVuSans24*");
+
 	//States: border->yaw_rad[2]
 
 
@@ -815,8 +817,8 @@ void drawBorder(Road* road, uint16_t indexCurrentPoint, uint8_t changeCurrentPoi
 		}
 	}
 
-	drawWhiteBorder(border, (int) road->side, LOWER_BORDER);
-	drawWhiteBorder(border, (int) road->side, HIGHER_BORDER);
+	//drawWhiteBorder(border, (int) road->side, LOWER_BORDER);
+	//drawWhiteBorder(border, (int) road->side, HIGHER_BORDER);
 }
 
 
@@ -831,8 +833,31 @@ void drawWhiteBorder(Border* border, int side, TYPE_BORDER typeBorder)
     double yaw_rad[2] = {border->yaw_rad[LOWER_BORDER], border->yaw_rad[HIGHER_BORDER]};
 	uint8_t sizeX = SIZE_BORDER;
 	int size[2];
+  /*  Box box[4] ;
+    size[HIGHER_BORDER] = sizeHigherBorder; // TODO
+    size[LOWER_BORDER] = displaySizeY - size[HIGHER_BORDER];
 
-	size[HIGHER_BORDER] = sizeHigherBorder; // TODO
+    box[0].x=side
+             - (typeBorder == LOWER_BORDER)
+               * round(size[LOWER_BORDER] * tan(yaw_rad[LOWER_BORDER]));
+
+    box[1].x = side
+               - (typeBorder == LOWER_BORDER)
+                 * round(size[LOWER_BORDER] * tan(yaw_rad[LOWER_BORDER]));
+    box[2].x = box[0].x+ ROAD_SIZE ;
+    box[3].x = box[1].x +ROAD_SIZE  ;
+
+    box[0].y=displaySizeY;
+    box[1].y =sizeHigherBorder;
+    box[2].y = ;
+    box[3].y = box[1].x +ROAD_SIZE  ;
+
+    for (int i=0 ; i<4; i++)
+    {
+        box[i].color = White ;
+        drawBoxGame(&box[i], ) ;
+    }*/
+size[HIGHER_BORDER] = sizeHigherBorder; // TODO
 	size[LOWER_BORDER] = displaySizeY - size[HIGHER_BORDER];
 
 	struct point corners[NB_CORNERS_BORDER];
@@ -851,10 +876,11 @@ void drawWhiteBorder(Border* border, int side, TYPE_BORDER typeBorder)
 	corners[CORNER_D_R].y = corners[CORNER_D_L].y;
 
 	gdispDrawPoly(0, 0, corners, NB_CORNERS_BORDER, Black);
-	gdispDrawPoly(1, 0, corners, NB_CORNERS_BORDER, Black);
+	//gdispDrawPoly(1, 0, corners, NB_CORNERS_BORDER, Black);
 
 	gdispDrawPoly(ROAD_SIZE, 0, corners, NB_CORNERS_BORDER, Black);
-	gdispDrawPoly(1 + ROAD_SIZE, 0, corners, NB_CORNERS_BORDER, Black);
+	//gdispDrawPoly(1 + ROAD_SIZE, 0, corners, NB_CORNERS_BORDER, Black);
+
 }
 
 uint8_t checkIfCollisionWithBorder(Border* border, double side)
@@ -955,7 +981,7 @@ void drawVehiclePositionOnMap(Vehicle* vehicle, Map* map)
 
 
 void drawBoxGame(Box* box, double yaw_rad) {
-	struct point corners[NB_CORNERS_BORDER];
+	/*struct point corners[NB_CORNERS_BORDER];
 	corners[CORNER_D_L].x = box->x;
 	corners[CORNER_D_L].y = box->y;
 
@@ -968,6 +994,14 @@ void drawBoxGame(Box* box, double yaw_rad) {
 	corners[CORNER_D_R].x = corners[CORNER_D_L].x + box->sizeX * cos(yaw_rad);
 	corners[CORNER_D_R].y = corners[CORNER_D_L].y + box->sizeX * sin(yaw_rad);
 
-	gdispGFillConvexPoly(GDISP, 0, 0, corners, NB_CORNERS_BORDER, box->color);
+	gdispGFillConvexPoly(GDISP, 0, 0, corners, NB_CORNERS_BORDER, box->color);*/
+
+    // try the implementation with the draw Tick Line function
+    uint16_t xend=0, yend=0 ;
+
+    xend =(int) (box->x+ box->sizeX/2 + box->sizeY* sin(yaw_rad))  ;
+    yend =(int) (box->y- box->sizeY * cos(yaw_rad)) ;
+    gdispDrawThickLine(box->x+ box->sizeX/2 , box->y,xend,yend,box->color,box->sizeX, 0);
+
 }
 
