@@ -29,8 +29,6 @@ void drawTask(Game* game) {
     xLastWakeTime = xTaskGetTickCount();
     const TickType_t tickFramerate = configTICK_RATE_HZ / 50;
 
-    int fps = 50;
-
     for (int i = 0; i < 3; i++)
         road->highScores[i] = INITIAL_HIGH_SCORE;
     uint8_t valuesToSend[15];
@@ -41,16 +39,21 @@ void drawTask(Game* game) {
 
     while (TRUE) {
         if (game->gameState == GAME_PLAYING) {
-            if (game->firstTimeStartGame) {
+            tactDrawTask++;
+            if (game->firstTimeStartGame && game->gameStateOtherPlayer==GAME_PLAYING) {
                 road = game->road[game->chosenMap];
                 map = game->map[game->chosenMap];
                 game->firstTimeStartGame = 0;
                 game->firstTimeEndGame = 1;
                 game->taktGame = 0;
                 game->taktUART = 0;
+                b_endGame = 0;
+                b_endGameBot = 0;
                 time_s = 0;
-                xTimerStart(xTimer, 0);
+                if( xTimerIsTimerActive( xTimer ) == pdFALSE )
+                    xTimerStart(xTimer, 0);
             }
+
 
             game->taktGame++;
 
@@ -58,17 +61,24 @@ void drawTask(Game* game) {
             gdispClear(White);
 
             if(time_s>=200)
-                b_endGame = (ego->currentRoadPoint == ROAD_POINTS - 1
+                b_endGame = b_endGame || (ego->currentRoadPoint == ROAD_POINTS - 1
                          && ego->distanceFromCurrentRoadPoint >=
                             road->point[ROAD_POINTS - 1].distanceToNextRoadPoint -
                             2 * UNIT_ROAD_DISTANCE) || (ego->currentRoadPoint > ROAD_POINTS - 1);
             else
                 b_endGame = 0;
-
+            if(ego->state != END_GAME && b_endGame)
+                ego->state = END_GAME;
+            for (int i = 0; i < NUM_BOTS; i++) {
+                b_endGameBot = b_endGameBot || (bot[i]->currentRoadPoint == ROAD_POINTS - 1 &&
+                                                bot[i]->distanceFromCurrentRoadPoint >=
+                                                road->point[ROAD_POINTS - 1].distanceToNextRoadPoint -
+                                                2 * UNIT_ROAD_DISTANCE) || (bot[i]->currentRoadPoint > ROAD_POINTS - 1);
+                if (bot[i]->state != END_GAME && b_endGameBot)
+                    bot[i]->state = END_GAME;
+            }
             //Read joystick values
-            if (!b_endGame) {
-                if (time_s != 0)
-                    fps = game->taktGame / (time_s / 100);
+            if (ego->state != END_GAME) {
                 joystickPositionX = (uint8_t) (ADC_GetConversionValue(ESPL_ADC_Joystick_2) >> 4);
                 joystickPositionY = (uint8_t) (ADC_GetConversionValue(ESPL_ADC_Joystick_1) >> 4);
             } else {
@@ -93,24 +103,69 @@ void drawTask(Game* game) {
                 ego->v_y = 0;
             }
 
+            if(game->mode == MULTIPLAYER_MODE)
+                ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
+            ego->rel.x = displaySizeX / 2 - calcX(&border, displaySizeY / 2, road->side);
+            if (!b_endGame)
+                updateRanking(ego, bot, road, rankedVehicles);
+
+            for(int i=0; i<NUM_BOTS; i++)
+                updateRelY(bot[i], ego, road);
+            checkCarCollision(rankedVehicles);
+            for(int i=0; i<NUM_BOTS; i++)
+                updateRelY(bot[i], ego, road);
+            // DRAW
+            ego->changeCurrentPoint = (lastCurrentPoint != ego->currentRoadPoint);
+            drawBorder(road, ego->currentRoadPoint, ego->changeCurrentPoint, ego, &border);
+            lastCurrentPoint = ego->currentRoadPoint;
+            // Gras and road
+            drawGrassAndRoad(road, &border, ego);
+            //TODO: Manage end of game
+            if (ego->currentRoadPoint == ROAD_POINTS - 1 && ego->distanceFromCurrentRoadPoint >=
+                                                            road->point[ROAD_POINTS - 1].distanceToNextRoadPoint -
+                                                            3 * UNIT_ROAD_DISTANCE) {
+                drawFinishGameAndHighScores(road, ego);
+            }
+
+
+            //Draw vehicles
+            for (int i = 0; i < NUM_BOTS; i++)
+                drawBot(bot[i], ego, &border, road);
+            drawVehicle(displaySizeX / 2, ego->rel.y, Red);
+
+
+            //for(int i=0; i<3; i++) {
+            sprintf(str, "EG %d", b_endGame);
+            gdispDrawString(0, 55, str, font1, White);
+            //}
+
+
+            sprintf(str, "d: %d", ego->distanceFromCurrentRoadPoint);
+            gdispDrawString(0, 77, str, font1, Black);
+            sprintf(str, "Game: %d", game->taktGame);
+            gdispDrawString(0, 33, str, font1, Black);
+            sprintf(str, "Uart: %d", game->taktUART);
+            gdispDrawString(0, 44, str, font1, Black);
+            sprintf(str, "CP %d", ego->currentRoadPoint);
+            gdispDrawString(0, 66, str, font1, Black);
+
+
+            drawMap(road, ego, bot, map);
+            drawInfo(ego, road, fps);
             // Ego
             switch (game->mode) {
                 case SINGLE_MODE:
                     ego->v_x = (joystickPositionX - 255 / 2) * V_X_MAX / MAX_JOYSTICK_X;
                     ego->a_y = (joystickPositionY - 255 / 2) * A_Y_MAX / MAX_JOYSTICK_Y;
-                    if (!b_endGame)
+                    if (ego->state != END_GAME)
                         calculateVehicleSpeed(ego, 50);
                     ego->changeCurrentPoint = updatePosition(ego, road);
 
                     calculateBotAcceleration(rankedVehicles, road);
                     calculateLateralSpeed(rankedVehicles, road, &border);
                     for (int i = 0; i < NUM_BOTS; i++) {
-                        b_endGameBot = (bot[i]->currentRoadPoint == ROAD_POINTS - 1 &&
-                                        bot[i]->distanceFromCurrentRoadPoint >=
-                                        road->point[ROAD_POINTS - 1].distanceToNextRoadPoint -
-                                        2 * UNIT_ROAD_DISTANCE) || (bot[i]->currentRoadPoint > ROAD_POINTS - 1);
-                        if (!b_endGameBot)
+                        if (bot[i]->state != END_GAME)
                             calculateVehicleSpeed(bot[i], 50);
                         else {
                             bot[i]->v_x = 0;
@@ -122,21 +177,15 @@ void drawTask(Game* game) {
                     }
                     break;
                 case MULTIPLAYER_MODE:
-                    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
                     switch (game->controlState) { // The other value is updated in the receive function
                         case SPEED_CTRL:
                             ego->a_y = (joystickPositionY - 255 / 2) * A_Y_MAX / MAX_JOYSTICK_Y;
-                            if (!b_endGame)
+                            if (ego->state != END_GAME)
                                 calculateVehicleSpeed(ego, 50);
 
                             calculateBotAcceleration(rankedVehicles, road);
                             for (int i = 0; i < NUM_BOTS; i++) {
-                                uint8_t b_endGameBot = (bot[i]->currentRoadPoint == ROAD_POINTS - 1 &&
-                                                        bot[i]->distanceFromCurrentRoadPoint >=
-                                                        road->point[ROAD_POINTS - 1].distanceToNextRoadPoint -
-                                                        2 * UNIT_ROAD_DISTANCE) ||
-                                                       (bot[i]->currentRoadPoint > ROAD_POINTS - 1);
-                                if (!b_endGameBot)
+                                if (bot[i]->state != END_GAME)
                                     calculateVehicleSpeed(bot[i], 50);
                                 else {
                                     bot[i]->v_x = 0;
@@ -145,6 +194,7 @@ void drawTask(Game* game) {
                                 }
                                 updatePosition(bot[i], road);
                             }
+                            //checkCarCollision(rankedVehicles);
 
                             valuesToSend[0] = (int) (ego->v_y);
                             valuesToSend[1] = game->gameState;
@@ -191,48 +241,6 @@ void drawTask(Game* game) {
                     xTaskNotifyGive(receiveHdl);
                     break;
             }
-
-
-            ego->rel.x = displaySizeX / 2 - calcX(&border, displaySizeY / 2, road->side);
-            if (!b_endGame)
-                updateRanking(ego, bot, road, rankedVehicles);
-            checkCarCollision(rankedVehicles);
-
-            // DRAW
-            ego->changeCurrentPoint = (lastCurrentPoint != ego->currentRoadPoint);
-            drawBorder(road, ego->currentRoadPoint, ego->changeCurrentPoint, ego, &border);
-            lastCurrentPoint = ego->currentRoadPoint;
-            // Gras and road
-            drawGrassAndRoad(road, &border, ego);
-            //TODO: Manage end of game
-            if (ego->currentRoadPoint == ROAD_POINTS - 1 && ego->distanceFromCurrentRoadPoint >=
-                                                            road->point[ROAD_POINTS - 1].distanceToNextRoadPoint -
-                                                            3 * UNIT_ROAD_DISTANCE) {
-                drawFinishGameAndHighScores(road, ego);
-            }
-            //Draw vehicles
-            for (int i = 0; i < NUM_BOTS; i++)
-                drawBot(bot[i], ego, &border, road);
-            drawVehicle(displaySizeX / 2, ego->rel.y, Red);
-
-            //for(int i=0; i<3; i++) {
-            sprintf(str, "EG %d", b_endGame);
-            gdispDrawString(0, 55, str, font1, White);
-            //}
-
-
-            sprintf(str, "d: %d", ego->distanceFromCurrentRoadPoint);
-            gdispDrawString(0, 77, str, font1, Black);
-            sprintf(str, "Game: %d", game->taktGame);
-            gdispDrawString(0, 33, str, font1, Black);
-            sprintf(str, "Uart: %d", game->taktUART);
-            gdispDrawString(0, 44, str, font1, Black);
-            sprintf(str, "CP %d", ego->currentRoadPoint);
-            gdispDrawString(0, 66, str, font1, Black);
-
-
-            drawMap(road, ego, bot, map);
-            drawInfo(ego, road, fps);
 
             // Wait for display to stop writing
             xSemaphoreTake(ESPL_DisplayReady, portMAX_DELAY);
@@ -310,6 +318,20 @@ void drawTask(Game* game) {
         } else
             vTaskDelay(20);
     }
+}
+
+void updateRelY(Vehicle* bot, Vehicle* ego, Road* road ){
+    int distanceBotToEgo = 0xFFFF;
+    if(bot->currentRoadPoint % LAP_POINTS == ego->currentRoadPoint  % LAP_POINTS) {
+        distanceBotToEgo = bot->distanceFromCurrentRoadPoint - ego->distanceFromCurrentRoadPoint;
+    }
+    else if((bot->currentRoadPoint-1) % LAP_POINTS == ego->currentRoadPoint  % LAP_POINTS) {
+        distanceBotToEgo = (bot->distanceFromCurrentRoadPoint + (road->point[ego->currentRoadPoint].distanceToNextRoadPoint - ego->distanceFromCurrentRoadPoint));
+    }
+    else if(bot->currentRoadPoint  % LAP_POINTS == (ego->currentRoadPoint-1) % LAP_POINTS) {
+        distanceBotToEgo = -(ego->distanceFromCurrentRoadPoint + (road->point[bot->currentRoadPoint].distanceToNextRoadPoint - bot->distanceFromCurrentRoadPoint));
+    }
+    bot->rel.y = displaySizeY/2 - distanceBotToEgo;
 }
 
 void drawVehicle(uint16_t x, uint16_t y, int color){
@@ -440,24 +462,31 @@ void drawInfo(Vehicle* ego,Road* road,int fps){
 
 void checkCarCollision(Vehicle* rankedVehicles[NUM_VEHICLES])
 {
-
+    uint8_t offset = 2;
     for(int i=1; i<NUM_VEHICLES; i++) {
-        for(int j=0; j<i; j++)
-        {
-            if(fabs(rankedVehicles[i]->rel.x - rankedVehicles[j]->rel.x) < VEHICLE_SIZE_X
-               && fabs(rankedVehicles[i]->rel.y - rankedVehicles[j]->rel.y) < VEHICLE_SIZE_Y)
-            {
-                if(rankedVehicles[i]->distanceFromCurrentRoadPoint - 4 >=0)
-                    rankedVehicles[i]->distanceFromCurrentRoadPoint -= 4;
-                else
-                    rankedVehicles[i]->distanceFromCurrentRoadPoint = 0;
-
-                rankedVehicles[j]->distanceFromCurrentRoadPoint += VEHICLE_SIZE_Y - fabs(rankedVehicles[i]->rel.y - rankedVehicles[j]->rel.y) +4;
-
-                rankedVehicles[j]->v_y += 0.1;
-                rankedVehicles[i]->v_y -= 0.1;
+        if(rankedVehicles[i]->state != END_GAME)
+            for (int j = 0; j < i; j++) {
+                if(fabs(rankedVehicles[i]->currentRoadPoint % LAP_POINTS - rankedVehicles[j]->currentRoadPoint % LAP_POINTS) <= 1) {
+                    if (fabs(rankedVehicles[i]->rel.x - rankedVehicles[j]->rel.x) < VEHICLE_SIZE_X
+                        && fabs(rankedVehicles[i]->rel.y - rankedVehicles[j]->rel.y) < VEHICLE_SIZE_Y) {
+                        if (rankedVehicles[j]->color != RED)
+                            rankedVehicles[j]->distanceFromCurrentRoadPoint +=
+                                    VEHICLE_SIZE_Y - fabs(rankedVehicles[i]->rel.y - rankedVehicles[j]->rel.y) + offset;
+                        else {
+                            if (rankedVehicles[i]->distanceFromCurrentRoadPoint -
+                                (VEHICLE_SIZE_Y - fabs(rankedVehicles[i]->rel.y - rankedVehicles[j]->rel.y) + offset) >=
+                                0)
+                                rankedVehicles[i]->distanceFromCurrentRoadPoint -=
+                                        VEHICLE_SIZE_Y - fabs(rankedVehicles[i]->rel.y - rankedVehicles[j]->rel.y) +
+                                        offset;
+                            else
+                                rankedVehicles[i]->distanceFromCurrentRoadPoint = 0;
+                        }
+                        rankedVehicles[j]->v_y += 0.1;
+                        rankedVehicles[i]->v_y -= 0.1;
+                    }
+                }
             }
-        }
     }
 }
 
@@ -552,19 +581,7 @@ uint8_t updatePosition(Vehicle* vehicle, Road* road) {
 
 
 void drawBot(Vehicle* bot, Vehicle*  ego, Border* border, Road* road){
-    int distanceBotToEgo = 0xFFFF;
-    if(bot->currentRoadPoint % LAP_POINTS == ego->currentRoadPoint  % LAP_POINTS) {
-        distanceBotToEgo = bot->distanceFromCurrentRoadPoint - ego->distanceFromCurrentRoadPoint;
-    }
-    else if((bot->currentRoadPoint-1) % LAP_POINTS == ego->currentRoadPoint  % LAP_POINTS) {
-        distanceBotToEgo = (bot->distanceFromCurrentRoadPoint + (road->point[ego->currentRoadPoint].distanceToNextRoadPoint - ego->distanceFromCurrentRoadPoint));
-    }
-    else if(bot->currentRoadPoint  % LAP_POINTS == (ego->currentRoadPoint-1) % LAP_POINTS) {
-        distanceBotToEgo = -(ego->distanceFromCurrentRoadPoint + (road->point[bot->currentRoadPoint].distanceToNextRoadPoint - bot->distanceFromCurrentRoadPoint));
-    }
-    if(fabs(distanceBotToEgo) <= displaySizeY/2 ){
-        bot->rel.y = displaySizeY/2 - distanceBotToEgo;
-
+    if(bot->rel.y <= displaySizeY && bot->rel.y>=0 ){
         if(bot->rel.y <= displaySizeY) {
             if (bot->color == GREEN) {
                 drawVehicle(bot->rel.x + calcX(border, bot->rel.y, road->side), bot->rel.y, Green);

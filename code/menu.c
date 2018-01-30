@@ -26,13 +26,14 @@ void startMenu(Game* game){
                 multi_mode.color = COLOUR_BUTTON_UNCHOSEN;
                 multi_mode.colorText = TEXT_COLOUR_BUTTON_UNCHOSEN;
             }
-            else if(lastConnectionState == CONNECTED && game->connectionState == NOT_CONNECTED){
+            else if(game->connectionState == NOT_CONNECTED){
                 single_mode.color = COLOUR_BUTTON_CHOSEN;
                 single_mode.colorText = TEXT_COLOUR_BUTTON_CHOSEN;
                 multi_mode.color = COLOUR_BUTTON_MP_OFF;
                 multi_mode.colorText = TEXT_COLOUR_BUTTON_MP_OFF;
                 game->mode = SINGLE_MODE;
-                game->menuState = NOT_CHOSEN;
+                if(lastConnectionState == CONNECTED)
+                    game->menuState = NOT_CHOSEN;
             }
             lastConnectionState = game->connectionState;
 

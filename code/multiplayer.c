@@ -131,7 +131,7 @@ void receiveWhileGamePlaying(Game* game, uint8_t input, uint8_t* pos, char buffe
                     // Second buffer: game state of other player
                     game->gameStateOtherPlayer = (uint8_t) buffer[2];
                     ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-                    if(game->gameStateOtherPlayer == GAME_PLAYING) {
+                    if (game->gameStateOtherPlayer == GAME_PLAYING) {
                         // First Buffer
                         game->taktUART++;
                         if (game->controlState == SPEED_CTRL) {
@@ -151,12 +151,24 @@ void receiveWhileGamePlaying(Game* game, uint8_t input, uint8_t* pos, char buffe
                             game->bot3->currentRoadPoint = buffer[10];
                             game->bot3->distanceFromCurrentRoadPoint = *((uint16_t *) (buffer + 11));
                         }
+                    } else if (game->gameStateOtherPlayer == START_GAME) {
+                        game->controlState = (buffer[5] + 1) % 2;
                     }
-                    else if(game->gameStateOtherPlayer == START_GAME) {
-                            game->controlState = (buffer[5] + 1) % 2;
+                    if (game->gameState == GAME_PLAYING){
+                        if(game->gameStateOtherPlayer == GAME_PLAYING)
+                            xTaskNotifyGive(drawHdl);
+                        else{
+                            uint8_t valuesToSend[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+                            valuesToSend[1] = (uint8_t) (game->gameState);
+                            sendviaUart(valuesToSend, 12);
+                            if (game->gameStateOtherPlayer == START_GAME)
+                                time_s = 0;
+                            xTaskNotifyGive(receiveHdl);
+                        }
                     }
-                    xTaskNotifyGive(drawHdl);
-                }
+                    else
+                        xTaskNotifyGive(drawHdl);
+                    }
                 *pos = 0;
             }
             break;

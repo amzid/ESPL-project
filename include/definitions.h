@@ -93,7 +93,7 @@ typedef struct
 
 #define REDUCED_VEL_COL_BORDER  0.5
 
-typedef enum {NO_COLLISION, COLLISION_WITH_BORDER} StateVehicle;
+typedef enum {NO_COLLISION, COLLISION_WITH_BORDER, END_GAME} StateVehicle;
 typedef enum {RED, GREEN, YELLOW, BLUE} Color;
 
 typedef struct
@@ -188,6 +188,7 @@ typedef struct {
 extern TimerHandle_t xTimer;
 extern uint16_t time_s;
 extern TaskHandle_t drawHdl, receiveHdl;
+extern uint8_t fps, tactDrawTask;
 
 #define BYTE_RESET                0xFF
 #define SIZE_VALUES_TO_SEND       12

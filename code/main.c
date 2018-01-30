@@ -24,7 +24,7 @@ font_t font1;
 uint16_t time_s = 0;
 TaskHandle_t drawHdl = NULL, receiveHdl  = NULL;
 TimerHandle_t xTimer=0;
-GameState lastGameStateOtherPlayer = START_MENU;
+uint8_t fps = 0, tactDrawTask = 0;
 
 void vTimerCallback( TimerHandle_t xTimer );
 
@@ -71,6 +71,10 @@ int main()
 void vTimerCallback( TimerHandle_t xTimer )
 {
     time_s++;
+    if (time_s>0 && time_s%100==0){
+        fps = tactDrawTask;
+        tactDrawTask = 0;
+    }
 }
 
 

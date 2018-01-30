@@ -16,12 +16,10 @@ void controlGameState(Game* game) {
         valuesToSend[i] = 0;
     volatile uint8_t lastGameStateOtherPlayer = game->gameStateOtherPlayer;
 
-    int firstTime = 1;
-
     while (TRUE) {
 
-        if(game->connectionState == NOT_CONNECTED && (game->gameState == GAME_PLAYING))// || game->gameState == GAME_PAUSED))
-            game->mode = SINGLE_MODE;
+        if(game->connectionState == NOT_CONNECTED && game->gameState == GAME_PLAYING && game->mode == MULTIPLAYER_MODE)
+            exitGame(game);
 
         // update buttons
         okButton.currentState = GPIO_ReadInputDataBit(OK_BUTTON_REGISTER, OK_BUTTON_PIN);
@@ -59,11 +57,7 @@ void controlGameState(Game* game) {
 
             case GAME_PLAYING:
                 if(exitButton.currentState == BUTTON_PRESSED && exitButton.lastState == BUTTON_UNPRESSED) {
-                    game->gameState = START_MENU;
-                    game->menuState = NOT_CHOSEN;
-                    game->controlState = SPEED_CTRL;
-                    game->mode = SINGLE_MODE;
-                    time_s = 0;
+                    exitGame(game);
                     break;
                 }
                 if(resetButton.currentState == BUTTON_PRESSED && resetButton.lastState == BUTTON_UNPRESSED) {
@@ -87,7 +81,7 @@ void controlGameState(Game* game) {
                 switch(game->gameStateOtherPlayer) {
                     case START_MENU:
                         if(lastGameStateOtherPlayer == GAME_PLAYING)
-                            game->mode = SINGLE_MODE;
+                            exitGame(game);
                         break;
 
                     case GAME_PAUSED:
@@ -112,17 +106,13 @@ void controlGameState(Game* game) {
                     break;
                 }
                 if(exitButton.currentState == BUTTON_PRESSED && exitButton.lastState == BUTTON_UNPRESSED) {
-                    game->gameState = START_MENU;
-                    game->menuState = NOT_CHOSEN;
-                    game->controlState = SPEED_CTRL;
-                    game->mode = SINGLE_MODE;
-                    time_s = 0;
+                    exitGame(game);
                     break;
                 }
                 switch(game->gameStateOtherPlayer) {
                     case START_MENU:
                         if(lastGameStateOtherPlayer == GAME_PAUSED)
-                            game->mode = SINGLE_MODE;
+                            exitGame(game);
                         break;
                     case GAME_PLAYING:
                         if(lastGameStateOtherPlayer==GAME_PAUSED)
@@ -145,4 +135,12 @@ void controlGameState(Game* game) {
 
         vTaskDelay(500);
     }
+}
+
+void exitGame(Game* game){
+    game->gameState = START_MENU;
+    game->menuState = NOT_CHOSEN;
+    game->controlState = SPEED_CTRL;
+    game->mode = SINGLE_MODE;
+    time_s = 0;
 }
