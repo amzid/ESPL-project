@@ -9,12 +9,14 @@
  *
  */
 void startMenu(Game* game){
-    Box single_mode = {displaySizeX/8,displaySizeY/3+5,BOX_SIZE_X,BOX_SIZE_Y,"Single Player Mode",COLOUR_BUTTON_UNCHOSEN,TEXT_COLOUR_BUTTON_UNCHOSEN},
-        multi_mode  = {displaySizeX*5/8,displaySizeY/3+5,BOX_SIZE_X,BOX_SIZE_Y,"Multiplayer Mode",COLOUR_BUTTON_UNCHOSEN,TEXT_COLOUR_BUTTON_UNCHOSEN};
-    Box speed_ctrl = {displaySizeX/8,displaySizeY/2+5,BOX_SIZE_X,BOX_SIZE_Y,"Control speed",COLOUR_BUTTON_UNCHOSEN,TEXT_COLOUR_BUTTON_UNCHOSEN},
-        steering_ctrl  = {displaySizeX*5/8,displaySizeY/2+5,BOX_SIZE_X,BOX_SIZE_Y,"Control steering",COLOUR_BUTTON_UNCHOSEN,TEXT_COLOUR_BUTTON_UNCHOSEN};
+    Box single_mode = {displaySizeX/8,displaySizeY/3+5,BOX_SIZE_X,BOX_SIZE_Y,"Single Player Mode",COLOUR_BUTTON_UNCHOSEN,TEXT_COLOUR_BUTTON_UNCHOSEN}, // the box showing Singlemode
+        multi_mode  = {displaySizeX*5/8,displaySizeY/3+5,BOX_SIZE_X,BOX_SIZE_Y,"Multiplayer Mode",COLOUR_BUTTON_UNCHOSEN,TEXT_COLOUR_BUTTON_UNCHOSEN};// the box showing multimode
+    Box speed_ctrl = {displaySizeX/8,displaySizeY/2+5,BOX_SIZE_X,BOX_SIZE_Y,"Control speed",COLOUR_BUTTON_UNCHOSEN,TEXT_COLOUR_BUTTON_UNCHOSEN},// the box showing spped ctrl
+        steering_ctrl  = {displaySizeX*5/8,displaySizeY/2+5,BOX_SIZE_X,BOX_SIZE_Y,"Control steering",COLOUR_BUTTON_UNCHOSEN,TEXT_COLOUR_BUTTON_UNCHOSEN};// the box showing steering ctrl
+
     for(int i=0; i<NUM_MAPS;i++)
         game->map[i]->color = White;
+
     volatile ConnectionState lastConnectionState = NOT_CONNECTED;
     volatile Mode lastModeOtherPlayer = MULTIPLAYER_MODE;
     uint8_t valuesToSend[12];
@@ -25,7 +27,7 @@ void startMenu(Game* game){
             //clear display
             gdispClear(White);
 
-            drawTitel();
+            drawTitel(); // Draw TITEL : F1 GAME
 
             // When Connection is turned on
             if((lastConnectionState == NOT_CONNECTED && game->connectionState == CONNECTED) || (lastModeOtherPlayer == SINGLE_MODE && game->modeOtherPlayer == MULTIPLAYER_MODE) )
@@ -54,6 +56,10 @@ void startMenu(Game* game){
                 joystickToCourseChoice(game);
             if(game->menuState == COURSE_CHOSEN)
                 joystickToCtrlChoice(&speed_ctrl, &steering_ctrl, game);
+
+            /*
+             * in the start menu we send always the current changes to the player A in order to ensure the synchronization between the players
+             */
             for(int i=0; i<12; i++)
                 valuesToSend[i]=0;
             valuesToSend[0] = (uint8_t) (game->menuState);
@@ -77,6 +83,10 @@ void startMenu(Game* game){
                 drawBox(&speed_ctrl);
                 drawBox(&steering_ctrl);
             }
+            // to show  button infos
+            font1 = gdispOpenFont("DejaVuSans24");
+            sprintf(str, "Press A to choose");
+            gdispDrawString(displaySizeX/2-20,displaySizeY-15, str, font1, Red);
 
             // Wait for display to stop writing
             xSemaphoreTake(ESPL_DisplayReady, portMAX_DELAY);
@@ -102,6 +112,9 @@ void drawTitel(){
 }
 
 void adjustColors(Game* game, Box* speed_ctrl, Box* steering_ctrl) {
+    /*
+     *  to trak the joystick threshold and show activ/inactiv box
+     */
 
     if(game->menuState >= MODE_CHOSEN) {
         game->map[game->chosenMap]->color = COLOUR_BUTTON_CHOSEN;
@@ -128,6 +141,9 @@ void adjustColors(Game* game, Box* speed_ctrl, Box* steering_ctrl) {
 
 void joystickToCourseChoice(Game* game)
 {
+    /*
+     * to track joystick_x and show active course
+     */
     int joystick_x = 0,
             threshold = 30;
     joystick_x = (uint8_t) (ADC_GetConversionValue(ESPL_ADC_Joystick_2) >> 4) - 255 / 2;
@@ -146,7 +162,7 @@ void joystickToCourseChoice(Game* game)
 }
 
 void drawMapInMenu(Map* map, uint16_t x, uint16_t y){
-    //draw map
+    //draw the three map in menu
     static int posInMap = 0;
     gdispFillConvexPoly(x+60,y+15, map, MAP_POINTS,map->color);
     gdispDrawPoly(x+60,y+15, map, MAP_POINTS, Black);
@@ -179,6 +195,9 @@ void drawMapInMenu(Map* map, uint16_t x, uint16_t y){
 
 
 void joystickToModeChoice(Box* single_mode, Box* multi_mode, Game* game){
+  /*
+   * track joystick position and update mode box color
+   */
     int joystick_x = 0,
             threshold = 50;
     joystick_x = (uint8_t) (ADC_GetConversionValue(ESPL_ADC_Joystick_2) >> 4) - 255 / 2;
@@ -200,6 +219,9 @@ void joystickToModeChoice(Box* single_mode, Box* multi_mode, Game* game){
 }
 
 void joystickToCtrlChoice(Box* speed_ctrl, Box* steering_ctrl, Game* game){
+    /*
+     * track joystick position and show active / inactive Ctrl choice
+     */
     int joystick_x = (uint8_t) (ADC_GetConversionValue(ESPL_ADC_Joystick_2) >> 4) - 255 / 2,
             threshold = 50;
     if(joystick_x > threshold)
@@ -215,6 +237,7 @@ void joystickToCtrlChoice(Box* speed_ctrl, Box* steering_ctrl, Game* game){
 
 
 void drawBox(Box* box){
+    // to draw box with given x,y,sizeX,sizeY,color
     font1 = gdispOpenFont("UI1");
 
     sprintf(str, box->text);

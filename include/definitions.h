@@ -85,7 +85,7 @@ typedef struct
 #define MAX_JOYSTICK_Y 			(255)
 #define V_Y_MAX                 30
 #define V_X_MAX 				20
-#define A_Y_MAX 				7
+#define A_Y_MAX 				4
 #define MAX_JOYSTICK_ANGLE_X 	22
 
 #define VEHICLE_SIZE_X          30

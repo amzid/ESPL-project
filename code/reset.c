@@ -8,8 +8,8 @@ void initializeVehicle(Vehicle* vehicle)
     vehicle->a_y = 0;
     vehicle->v_x = 0;
     vehicle->v_y = 0;
-    vehicle->currentRoadPoint = ROAD_POINTS/2;
-    vehicle->distanceFromCurrentRoadPoint = 0;
+    vehicle->currentRoadPoint =0;
+    vehicle->distanceFromCurrentRoadPoint = ROAD_POINTS-3;
     vehicle->state = NO_COLLISION;
     switch(vehicle->color){
         case RED:
@@ -19,22 +19,22 @@ void initializeVehicle(Vehicle* vehicle)
             break;
         case GREEN:
             vehicle->a_y_0 = 5;
-            vehicle->v_y_max_straight_road = 13;
+            vehicle->v_y_max_straight_road = 9;
             vehicle->absEffect = 1.5;
             vehicle->rel.x = 10;
             vehicle->distanceFromCurrentRoadPoint = 90;
             break;
         case YELLOW:
-            vehicle->a_y_0 = 6;
-            vehicle->v_y_max_straight_road = 12;
+            vehicle->a_y_0 = 2;
+            vehicle->v_y_max_straight_road = 10;
             vehicle->absEffect = 1.2;
             vehicle->rel.x = 50;
             vehicle->distanceFromCurrentRoadPoint = 60;
             break;
         case BLUE:
-            vehicle->a_y_0 = 7;
-            vehicle->v_y_max_straight_road = 12;
-            vehicle->absEffect = 1.5;
+            vehicle->a_y_0 = 3;
+            vehicle->v_y_max_straight_road = 11;
+            vehicle->absEffect =1;
             vehicle->rel.x = 115;
             vehicle->distanceFromCurrentRoadPoint = 0;
             break;
