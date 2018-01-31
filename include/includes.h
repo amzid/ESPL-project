@@ -5,6 +5,8 @@
  *
  **/
 #include "stdio.h"
+#include "stdlib.h"
+#include "string.h"
 
 /* Board includes */
 #include "stm32f4xx.h"
@@ -15,6 +17,7 @@
 
 /* FreeRTOS includes */
 #include "FreeRTOS.h"
+#include "timers.h"
 #include "task.h"
 #include "queue.h"
 
