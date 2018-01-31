@@ -1,5 +1,4 @@
 #include <includes.h>
-#include "includes.h"
 #include "reset.h"
 
 void initializeVehicle(Vehicle* vehicle)
@@ -8,8 +7,8 @@ void initializeVehicle(Vehicle* vehicle)
     vehicle->a_y = 0;
     vehicle->v_x = 0;
     vehicle->v_y = 0;
-    vehicle->currentRoadPoint =0;
-    vehicle->distanceFromCurrentRoadPoint = ROAD_POINTS-3;
+    vehicle->currentRoadPoint = 0;
+    vehicle->distanceFromCurrentRoadPoint = 0;
     vehicle->state = NO_COLLISION;
     switch(vehicle->color){
         case RED:

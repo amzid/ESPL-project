@@ -144,5 +144,6 @@ void exitGame(Game* game){
     game->controlState = SPEED_CTRL;
     game->mode = MULTIPLAYER_MODE;
     game->modeOtherPlayer == MULTIPLAYER_MODE;
+    game->connectionState = NOT_CONNECTED;
     time_s = 0;
 }

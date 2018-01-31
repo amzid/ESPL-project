@@ -34,6 +34,8 @@ void startMenu(Game* game){
             {
                 multi_mode.color = COLOUR_BUTTON_UNCHOSEN;
                 multi_mode.colorText = TEXT_COLOUR_BUTTON_UNCHOSEN;
+                single_mode.color = COLOUR_BUTTON_UNCHOSEN;
+                single_mode.colorText = TEXT_COLOUR_BUTTON_UNCHOSEN;
             }
             // When Connection is turned off
             else if(game->connectionState == NOT_CONNECTED || game->modeOtherPlayer == SINGLE_MODE){
@@ -79,14 +81,15 @@ void startMenu(Game* game){
                 }
             }
 
-            if(game->menuState >= COURSE_CHOSEN) {
+            if(game->menuState >= COURSE_CHOSEN ) {
                 drawBox(&speed_ctrl);
                 drawBox(&steering_ctrl);
             }
+
             // to show  button infos
             font1 = gdispOpenFont("DejaVuSans24");
             sprintf(str, "Press A to choose");
-            gdispDrawString(displaySizeX/2-20,displaySizeY-15, str, font1, Red);
+            gdispDrawString(displaySizeX/2-60,displaySizeY-15, str, font1, Red);
 
             // Wait for display to stop writing
             xSemaphoreTake(ESPL_DisplayReady, portMAX_DELAY);
@@ -94,6 +97,11 @@ void startMenu(Game* game){
             ESPL_DrawLayer();
         }
         else{
+            lastConnectionState = game->connectionState;
+            multi_mode.color = COLOUR_BUTTON_UNCHOSEN;
+            multi_mode.colorText = TEXT_COLOUR_BUTTON_UNCHOSEN;
+            single_mode.color = COLOUR_BUTTON_UNCHOSEN;
+            single_mode.colorText = TEXT_COLOUR_BUTTON_UNCHOSEN;
             vTaskDelay(1000);
         }
     }
@@ -216,6 +224,14 @@ void joystickToModeChoice(Box* single_mode, Box* multi_mode, Game* game){
             game->mode = SINGLE_MODE;
         }
     }
+    else {
+        single_mode->color = COLOUR_BUTTON_CHOSEN;
+        single_mode->colorText = TEXT_COLOUR_BUTTON_CHOSEN;
+        multi_mode->color = COLOUR_BUTTON_MP_OFF;
+        multi_mode->colorText = TEXT_COLOUR_BUTTON_MP_OFF;
+        game->mode = SINGLE_MODE;
+    }
+
 }
 
 void joystickToCtrlChoice(Box* speed_ctrl, Box* steering_ctrl, Game* game){

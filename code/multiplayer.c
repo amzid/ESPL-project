@@ -63,7 +63,6 @@ void receiveInStartMenu(Game* game, uint8_t input, uint8_t* pos, char buffer[15]
             break;
         case 13:
             if (input == stopByte) {
-                game->received_buffer = (uint8_t) buffer[1];
                 game->gameStateOtherPlayer = (uint8_t) buffer[2];
                 if (game->gameStateOtherPlayer == START_MENU && buffer[1] >= MODE_CHOSEN) {
                     game->modeOtherPlayer = buffer[3];
@@ -125,7 +124,6 @@ void receiveWhileGamePlaying(Game* game, uint8_t input, uint8_t* pos, char buffe
             break;
         case 13:
             if (input == stopByte) {
-                game->received_buffer = (uint8_t) buffer[1];
                 if (game->mode == MULTIPLAYER_MODE) {
                     // Second buffer: game state of other player
                     game->gameStateOtherPlayer = (uint8_t) buffer[2];

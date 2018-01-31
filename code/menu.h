@@ -16,5 +16,12 @@
 #define TEXT_COLOUR_BUTTON_MP_OFF             White
 
 void startMenu(Game* game);
+void drawTitel();
+void adjustColors(Game* game, Box* speed_ctrl, Box* steering_ctrl);
+void joystickToCourseChoice(Game* game);
+void drawMapInMenu(Map* map, uint16_t x, uint16_t y);
+void joystickToModeChoice(Box* single_mode, Box* multi_mode, Game* game);
+void joystickToCtrlChoice(Box* speed_ctrl, Box* steering_ctrl, Game* game);
+void drawBox(Box* box);
 
 #endif

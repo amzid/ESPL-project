@@ -143,11 +143,8 @@ typedef struct
 	Map* map[3];
 
     uint8_t gameStateOtherPlayer;
-    uint8_t received_buffer;
     uint32_t taktUART;
     uint32_t taktGame;
-    uint8_t elapsed_s;
-    uint16_t elapsed_ms;
     uint8_t firstTimeEndGame;
     uint8_t firstTimeStartGame;
     Mode modeOtherPlayer;
